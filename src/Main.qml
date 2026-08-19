@@ -443,25 +443,15 @@ ApplicationWindow {
                     border.color: colBtnBorder
                     border.width: 1
 
-                    Row {
+                    Text {
                         anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: "PLACES"
-                            color: colMuted
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 12
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        Text {
-                            text: String(backend.places)
-                            color: colPrompt
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 13
-                            verticalAlignment: Text.AlignVCenter
-                        }
+                        text: "<font color='" + colMuted + "'>PLACES</font> <font color='" + colPrompt + "'>" + backend.places + "</font>"
+                        textFormat: Text.RichText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                        font.bold: true
+                        font.pixelSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                     MouseArea {
@@ -488,25 +478,15 @@ ApplicationWindow {
                     border.color: colBtnBorder
                     border.width: 1
 
-                    Row {
+                    Text {
                         anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            text: "RADIANS"
-                            color: colMuted
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 12
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        Text {
-                            text: String(backend.radians)
-                            color: colPrompt
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 13
-                            verticalAlignment: Text.AlignVCenter
-                        }
+                        text: "<font color='" + colMuted + "'>RADIANS</font> <font color='" + colPrompt + "'>" + backend.radians + "</font>"
+                        textFormat: Text.RichText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                        font.bold: true
+                        font.pixelSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                     MouseArea {
@@ -534,9 +514,9 @@ ApplicationWindow {
                         anchors.centerIn: parent
                         text: "CLEAR TAPE"
                         color: colMuted
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
                         font.bold: true
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -566,7 +546,7 @@ ApplicationWindow {
                         anchors.centerIn: parent
                         text: "HELP ?"
                         color: colPrompt
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
                         font.bold: true
                         font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
@@ -604,29 +584,17 @@ ApplicationWindow {
                     border.color: colBtnBorder
                     border.width: 1
 
-                    Row {
+                    Text {
                         anchors.centerIn: parent
-                        spacing: 6
-                        width: Math.min(parent.width - 16, implicitWidth)
-
-                        Text {
-                            text: "STORED"
-                            color: colMuted
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 11
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        Text {
-                            text: win.getStoredVarsText()
-                            color: colPrompt
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 12
-                            elide: Text.ElideRight
-                            width: Math.min(parent.parent.width - 80, implicitWidth)
-                            verticalAlignment: Text.AlignVCenter
-                        }
+                        width: Math.min(parent.width - 20, implicitWidth)
+                        text: "<font color='" + colMuted + "'>STORED</font> <font color='" + colPrompt + "'>" + win.getStoredVarsText() + "</font>"
+                        textFormat: Text.RichText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                        font.bold: true
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                     MouseArea {
