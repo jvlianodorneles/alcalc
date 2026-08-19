@@ -7,10 +7,10 @@ import "components"
 
 ApplicationWindow {
     id: win
-    width: 500
-    height: 640
-    minimumWidth: 380
-    minimumHeight: 460
+    width: 580
+    height: 720
+    minimumWidth: 460
+    minimumHeight: 520
     visible: true
     title: "Alcalc - Apple Calculator Language"
 
@@ -39,26 +39,26 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 10
+        anchors.margins: 14
+        spacing: 12
 
         // =============================================================
         // HEADER BAR: TITLE + MODE PILLS
         // =============================================================
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: 10
 
             Text {
                 text: "🧮"
-                font.pixelSize: 20
+                font.pixelSize: 22
             }
 
             Text {
                 text: "Alcalc"
                 color: backend.themeForeground
                 font.bold: true
-                font.pixelSize: 18
+                font.pixelSize: 19
             }
 
             Text {
@@ -70,20 +70,20 @@ ApplicationWindow {
 
             // Radians / Degrees Toggle Pill
             Button {
-                Layout.preferredHeight: 30
-                Layout.preferredWidth: 64
+                Layout.preferredHeight: 34
+                Layout.preferredWidth: 74
                 contentItem: Text {
                     text: backend.radians ? "RAD" : "DEG"
                     color: backend.themeAccent
                     font.bold: true
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
                     color: backend.themeSurface
                     border.color: backend.themeBorder
-                    radius: 15
+                    radius: 17
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Angle mode: " + (backend.radians ? "Radians (Click for Degrees)" : "Degrees (Click for Radians)")
@@ -92,20 +92,20 @@ ApplicationWindow {
 
             // Decimal Places Stepper Pill
             Button {
-                Layout.preferredHeight: 30
-                Layout.preferredWidth: 84
+                Layout.preferredHeight: 34
+                Layout.preferredWidth: 96
                 contentItem: Text {
                     text: "Places: " + backend.places
                     color: backend.themeForeground
                     font.bold: true
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
                     color: backend.themeSurface
                     border.color: backend.themeBorder
-                    radius: 15
+                    radius: 17
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Decimal precision: " + backend.places + " (Click to cycle 2, 4, 6, 8, 0)"
@@ -122,37 +122,37 @@ ApplicationWindow {
         TabBar {
             id: mainTabBar
             Layout.fillWidth: true
-            Layout.preferredHeight: 38
+            Layout.preferredHeight: 44
             background: Rectangle {
                 color: backend.themeSurface
-                radius: 6
+                radius: 8
                 border.color: backend.themeBorder
             }
 
             TabButton {
                 text: "🧮 Calc"
                 font.bold: mainTabBar.currentIndex === 0
-                font.pixelSize: 12
+                font.pixelSize: 13
             }
             TabButton {
                 text: "📜 Tape" + (backend.historyList.length > 0 ? " (" + backend.historyList.length + ")" : "")
                 font.bold: mainTabBar.currentIndex === 1
-                font.pixelSize: 12
+                font.pixelSize: 13
             }
             TabButton {
                 text: "📚 Formulas"
                 font.bold: mainTabBar.currentIndex === 2
-                font.pixelSize: 12
+                font.pixelSize: 13
             }
             TabButton {
-                text: "🧩 Vars & Macros"
+                text: "🧩 Macros"
                 font.bold: mainTabBar.currentIndex === 3
-                font.pixelSize: 12
+                font.pixelSize: 13
             }
             TabButton {
                 text: "❓ Help"
                 font.bold: mainTabBar.currentIndex === 4
-                font.pixelSize: 12
+                font.pixelSize: 13
             }
         }
 

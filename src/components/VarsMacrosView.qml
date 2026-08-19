@@ -26,7 +26,7 @@ Item {
             // =========================================================
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: varsColumn.implicitHeight + 20
+                Layout.preferredHeight: varsColumn.implicitHeight + 24
                 color: backend.themeSurface
                 radius: 8
                 border.color: backend.themeBorder
@@ -34,8 +34,8 @@ Item {
                 ColumnLayout {
                     id: varsColumn
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
+                    anchors.margins: 14
+                    spacing: 10
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -43,14 +43,14 @@ Item {
                             text: "🧩 Active Variables in Memory"
                             color: backend.themeForeground
                             font.bold: true
-                            font.pixelSize: 15
+                            font.pixelSize: 16
                             Layout.fillWidth: true
                         }
 
                         Button {
-                            text: "Clear All Vars"
-                            contentItem: Text { text: "Clear Vars"; color: backend.themeError; font.bold: true; font.pixelSize: 11 }
-                            background: Rectangle { color: backend.themeSurfaceVariant; border.color: backend.themeError; radius: 4 }
+                            Layout.preferredHeight: 34
+                            contentItem: Text { text: "Clear All Vars"; color: backend.themeError; font.bold: true; font.pixelSize: 12 }
+                            background: Rectangle { color: backend.themeSurfaceVariant; border.color: backend.themeError; radius: 6 }
                             onClicked: backend.clearVars()
                         }
                     }
@@ -70,37 +70,37 @@ Item {
                         model: Object.keys(backend.varsMap)
                         delegate: Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 38
                             color: index % 2 === 0 ? backend.themeSurfaceVariant : "transparent"
-                            radius: 4
+                            radius: 6
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
+                                anchors.margins: 8
+                                spacing: 10
 
                                 Text {
                                     text: modelData
                                     color: backend.themeAccent
-                                    font.family: "Monospace"
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
                                     font.bold: true
-                                    font.pixelSize: 13
-                                    Layout.preferredWidth: 80
+                                    font.pixelSize: 14
+                                    Layout.preferredWidth: 100
                                 }
 
                                 Text {
                                     text: "= " + Engine.render(backend.varsMap[modelData], backend.places)
                                     color: backend.themeForeground
-                                    font.family: "Monospace"
-                                    font.pixelSize: 13
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                                    font.pixelSize: 14
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
 
                                 Button {
-                                    Layout.preferredHeight: 24
-                                    Layout.preferredWidth: 24
-                                    contentItem: Text { text: "✕"; color: backend.themeMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                    Layout.preferredHeight: 28
+                                    Layout.preferredWidth: 28
+                                    contentItem: Text { text: "✕"; color: backend.themeMuted; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                                     background: Rectangle { color: "transparent" }
                                     onClicked: backend.removeVar(modelData)
                                 }
@@ -115,7 +115,7 @@ Item {
             // =========================================================
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: macrosColumn.implicitHeight + 20
+                Layout.preferredHeight: macrosColumn.implicitHeight + 24
                 color: backend.themeSurface
                 radius: 8
                 border.color: backend.themeBorder
@@ -123,20 +123,20 @@ Item {
                 ColumnLayout {
                     id: macrosColumn
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
+                    anchors.margins: 14
+                    spacing: 12
 
                     Text {
                         text: "🧮 Custom Expression Macros"
                         color: backend.themeForeground
                         font.bold: true
-                        font.pixelSize: 15
+                        font.pixelSize: 16
                     }
 
                     Text {
                         text: "Define reusable formula templates. Use parameter names like `x`, `y` or `r` that can be assigned at runtime."
                         color: backend.themeMuted
-                        font.pixelSize: 12
+                        font.pixelSize: 13
                         wrapMode: Text.Wrap
                         Layout.fillWidth: true
                     }
@@ -144,12 +144,12 @@ Item {
                     // Add Macro Form
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: 8
 
                         TextField {
                             id: macroNameInput
-                            Layout.preferredWidth: 120
-                            Layout.preferredHeight: 34
+                            Layout.preferredWidth: 130
+                            Layout.preferredHeight: 40
                             placeholderText: "Macro name"
                             placeholderTextColor: backend.themeMuted
                             color: backend.themeForeground
@@ -157,14 +157,14 @@ Item {
                             background: Rectangle {
                                 color: backend.themeBackground
                                 border.color: backend.themeBorder
-                                radius: 4
+                                radius: 6
                             }
                         }
 
                         TextField {
                             id: macroExprInput
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 34
+                            Layout.preferredHeight: 40
                             placeholderText: "Template expression (e.g. x - 32 * 5 / 9)"
                             placeholderTextColor: backend.themeMuted
                             color: backend.themeForeground
@@ -172,24 +172,24 @@ Item {
                             background: Rectangle {
                                 color: backend.themeBackground
                                 border.color: backend.themeBorder
-                                radius: 4
+                                radius: 6
                             }
                         }
 
                         Button {
-                            Layout.preferredHeight: 34
-                            Layout.preferredWidth: 80
+                            Layout.preferredHeight: 40
+                            Layout.preferredWidth: 90
                             contentItem: Text {
                                 text: "+ Add"
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
                             background: Rectangle {
                                 color: backend.themeAccent
-                                radius: 4
+                                radius: 6
                             }
                             onClicked: {
                                 var name = macroNameInput.text.trim();
@@ -217,41 +217,41 @@ Item {
                         model: Object.keys(backend.macrosMap)
                         delegate: Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 36
+                            Layout.preferredHeight: 42
                             color: index % 2 === 0 ? backend.themeSurfaceVariant : "transparent"
-                            radius: 4
+                            radius: 6
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
+                                anchors.margins: 8
+                                spacing: 10
 
                                 Text {
                                     text: modelData
                                     color: backend.themeAccent
-                                    font.family: "Monospace"
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
                                     font.bold: true
-                                    font.pixelSize: 13
-                                    Layout.preferredWidth: 100
+                                    font.pixelSize: 14
+                                    Layout.preferredWidth: 120
                                 }
 
                                 Text {
                                     text: "= " + backend.macrosMap[modelData]
                                     color: backend.themeForeground
-                                    font.family: "Monospace"
-                                    font.pixelSize: 13
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                                    font.pixelSize: 14
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
 
                                 Button {
-                                    Layout.preferredHeight: 26
-                                    Layout.preferredWidth: 60
+                                    Layout.preferredHeight: 30
+                                    Layout.preferredWidth: 70
                                     contentItem: Text {
                                         text: "▶ Test"
                                         color: backend.themeForeground
                                         font.bold: true
-                                        font.pixelSize: 11
+                                        font.pixelSize: 12
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -264,9 +264,9 @@ Item {
                                 }
 
                                 Button {
-                                    Layout.preferredHeight: 26
-                                    Layout.preferredWidth: 26
-                                    contentItem: Text { text: "✕"; color: backend.themeMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                                    Layout.preferredHeight: 30
+                                    Layout.preferredWidth: 30
+                                    contentItem: Text { text: "✕"; color: backend.themeMuted; font.pixelSize: 12; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                                     background: Rectangle { color: "transparent" }
                                     onClicked: backend.removeMacro(modelData)
                                 }

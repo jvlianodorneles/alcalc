@@ -14,45 +14,41 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: 12
 
-        // Search and Category Pills
-        RowLayout {
+        // Search Row
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 8
+            Layout.preferredHeight: 42
+            color: backend.themeSurface
+            radius: 8
+            border.color: searchFormulaField.activeFocus ? backend.themeAccent : backend.themeBorder
+            border.width: searchFormulaField.activeFocus ? 2 : 1
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 38
-                color: backend.themeSurface
-                radius: 6
-                border.color: searchFormulaField.activeFocus ? backend.themeAccent : backend.themeBorder
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 6
+                spacing: 8
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 6
-
-                    Text { text: " 🔍"; color: backend.themeMuted; font.pixelSize: 14 }
-                    TextField {
-                        id: searchFormulaField
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        placeholderText: "Search formulas (e.g. celsius, prime, dice, kinetic)..."
-                        placeholderTextColor: backend.themeMuted
-                        color: backend.themeForeground
-                        font.pixelSize: 13
-                        background: null
-                        onTextChanged: root.searchQuery = text.toLowerCase()
-                    }
-                    Button {
-                        visible: searchFormulaField.text.length > 0
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        flat: true
-                        contentItem: Text { text: "✕"; color: backend.themeMuted; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
-                        onClicked: searchFormulaField.text = ""
-                    }
+                Text { text: " 🔍"; color: backend.themeMuted; font.pixelSize: 15 }
+                TextField {
+                    id: searchFormulaField
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    placeholderText: "Search formulas (e.g. celsius, prime, dice, kinetic)..."
+                    placeholderTextColor: backend.themeMuted
+                    color: backend.themeForeground
+                    font.pixelSize: 14
+                    background: null
+                    onTextChanged: root.searchQuery = text.toLowerCase()
+                }
+                Button {
+                    visible: searchFormulaField.text.length > 0
+                    Layout.preferredWidth: 28
+                    Layout.preferredHeight: 28
+                    flat: true
+                    contentItem: Text { text: "✕"; color: backend.themeMuted; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 13 }
+                    onClicked: searchFormulaField.text = ""
                 }
             }
         }
@@ -60,12 +56,12 @@ Item {
         // Category Filter Chips
         ScrollView {
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            contentHeight: 36
+            Layout.preferredHeight: 40
+            contentHeight: 40
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             RowLayout {
-                spacing: 6
+                spacing: 8
 
                 Repeater {
                     model: [
@@ -79,6 +75,7 @@ Item {
                     delegate: Button {
                         checkable: true
                         checked: root.selectedCategory === modelData.key
+                        Layout.preferredHeight: 36
                         contentItem: Text {
                             text: modelData.label
                             color: parent.checked ? "#ffffff" : backend.themeForeground
@@ -88,7 +85,7 @@ Item {
                         background: Rectangle {
                             color: parent.checked ? backend.themeAccent : (parent.hovered ? backend.themeSurfaceVariant : backend.themeSurface)
                             border.color: parent.checked ? backend.themeAccent : backend.themeBorder
-                            radius: 16
+                            radius: 18
                         }
                         onClicked: root.selectedCategory = modelData.key
                     }
@@ -102,7 +99,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 8
+            spacing: 10
             model: {
                 var list = root.allSamples || [];
                 var res = [];
@@ -122,7 +119,7 @@ Item {
 
             delegate: Rectangle {
                 width: formulaListView.width
-                height: cardLayout.implicitHeight + 20
+                height: cardLayout.implicitHeight + 24
                 color: backend.themeSurface
                 radius: 8
                 border.color: backend.themeBorder
@@ -131,8 +128,8 @@ Item {
                 ColumnLayout {
                     id: cardLayout
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 6
+                    anchors.margins: 12
+                    spacing: 8
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -140,22 +137,22 @@ Item {
                             text: modelData.title
                             color: backend.themeForeground
                             font.bold: true
-                            font.pixelSize: 14
+                            font.pixelSize: 15
                             Layout.fillWidth: true
                         }
 
                         Rectangle {
-                            Layout.preferredHeight: 20
-                            Layout.preferredWidth: catLabel.implicitWidth + 12
+                            Layout.preferredHeight: 24
+                            Layout.preferredWidth: catLabel.implicitWidth + 16
                             color: backend.themeSurfaceVariant
-                            radius: 10
+                            radius: 12
                             border.color: backend.themeBorder
                             Text {
                                 id: catLabel
                                 anchors.centerIn: parent
                                 text: modelData.categoryName || modelData.category
                                 color: backend.themeMuted
-                                font.pixelSize: 10
+                                font.pixelSize: 11
                                 font.bold: true
                             }
                         }
@@ -165,7 +162,7 @@ Item {
                         visible: modelData.desc !== undefined && modelData.desc !== ""
                         text: modelData.desc || ""
                         color: backend.themeMuted
-                        font.pixelSize: 12
+                        font.pixelSize: 13
                         font.italic: true
                         Layout.fillWidth: true
                     }
@@ -173,24 +170,24 @@ Item {
                     // Expression Box + Run Button
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: 10
 
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 34
+                            Layout.preferredHeight: 38
                             color: backend.themeBackground
                             radius: 6
                             border.color: backend.themeBorder
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.margins: 6
+                                anchors.margins: 8
 
                                 Text {
                                     text: modelData.expr
                                     color: backend.themeAccent
-                                    font.family: "Monospace"
-                                    font.pixelSize: 13
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                                    font.pixelSize: 14
                                     font.bold: true
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
@@ -199,13 +196,13 @@ Item {
                         }
 
                         Button {
-                            Layout.preferredHeight: 34
-                            Layout.preferredWidth: 86
+                            Layout.preferredHeight: 38
+                            Layout.preferredWidth: 96
                             contentItem: Text {
                                 text: "▶ Run"
                                 color: "#ffffff"
                                 font.bold: true
-                                font.pixelSize: 12
+                                font.pixelSize: 13
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
