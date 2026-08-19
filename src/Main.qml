@@ -150,6 +150,8 @@ ApplicationWindow {
     Shortcut { sequence: "Esc"; onActivated: {
         if (helpDialog.opened) {
             helpDialog.close();
+        } else if (storedDialog.opened) {
+            storedDialog.close();
         } else if (inputField.text.length > 0) {
             inputField.text = "";
         } else {
@@ -416,14 +418,14 @@ ApplicationWindow {
         }
 
         // =============================================================
-        // BOTTOM BUTTONS & STATUS BAR (Perfect H & V Center Alignment: 52px & 48px)
+        // BOTTOM BUTTONS & STATUS BAR (Spacious 2-Row Distribution)
         // =============================================================
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: false
             spacing: 6
 
-            // Row 1: PLACES, RADIANS, STORED, CLEAR TAPE (Height: 52px)
+            // Row 1: PLACES, RADIANS, CLEAR TAPE, HELP ? (Height: 52px)
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
@@ -434,8 +436,8 @@ ApplicationWindow {
 
                 // PLACES Button
                 Rectangle {
+                    Layout.fillWidth: true
                     Layout.preferredHeight: 52
-                    Layout.preferredWidth: 84
                     Layout.fillHeight: false
                     color: placesArea.pressed ? colBorder : (placesArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
                     border.color: colBtnBorder
@@ -479,8 +481,8 @@ ApplicationWindow {
 
                 // RADIANS Button
                 Rectangle {
+                    Layout.fillWidth: true
                     Layout.preferredHeight: 52
-                    Layout.preferredWidth: 92
                     Layout.fillHeight: false
                     color: radiansArea.pressed ? colBorder : (radiansArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
                     border.color: colBtnBorder
@@ -519,54 +521,10 @@ ApplicationWindow {
                     ToolTip.text: "Click to toggle angle mode (1 = Radians, 0 = Degrees)"
                 }
 
-                // STORED Button
+                // CLEAR TAPE Button
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
-                    Layout.fillHeight: false
-                    color: storedArea.pressed ? colBorder : (storedArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
-                    border.color: colBtnBorder
-                    border.width: 1
-
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-                        width: Math.min(parent.width - 10, implicitWidth)
-                        Text {
-                            text: "STORED"
-                            color: colMuted
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 12
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        Text {
-                            text: win.getStoredVarsText()
-                            color: colPrompt
-                            font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.bold: true
-                            font.pixelSize: 12
-                            elide: Text.ElideRight
-                            width: Math.min(100, implicitWidth)
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-
-                    MouseArea {
-                        id: storedArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                    }
-
-                    ToolTip.visible: storedArea.containsMouse
-                    ToolTip.text: "Active variables in memory: " + win.getStoredVarsText()
-                }
-
-                // CLEAR TAPE Button (Changed to CLEAR TAPE)
-                Rectangle {
-                    Layout.preferredHeight: 52
-                    Layout.preferredWidth: 110
                     Layout.fillHeight: false
                     color: clearTapeArea.pressed ? colBorder : (clearTapeArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
                     border.color: colBtnBorder
@@ -594,9 +552,41 @@ ApplicationWindow {
                     ToolTip.visible: clearTapeArea.containsMouse
                     ToolTip.text: "Clear calculation tape history (Ctrl+K)"
                 }
+
+                // HELP ? Button
+                Rectangle {
+                    Layout.preferredWidth: 80
+                    Layout.preferredHeight: 52
+                    Layout.fillHeight: false
+                    color: helpBtnArea.pressed ? colBorder : (helpBtnArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colPrompt
+                    border.width: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "HELP ?"
+                        color: colPrompt
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.bold: true
+                        font.pixelSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    MouseArea {
+                        id: helpBtnArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: helpDialog.open()
+                    }
+
+                    ToolTip.visible: helpBtnArea.containsMouse
+                    ToolTip.text: "Open Apple Calculator reference manual (F1)"
+                }
             }
 
-            // Row 2: FORGET EVERY NAME & HELP ? (Height: 48px)
+            // Row 2: STORED (Wide 250px+) & FORGET EVERY NAME (Height: 48px)
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 48
@@ -604,6 +594,52 @@ ApplicationWindow {
                 Layout.maximumHeight: 48
                 Layout.fillHeight: false
                 spacing: 6
+
+                // STORED Button (Wide 250px+ area with click-to-inspect)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 48
+                    Layout.fillHeight: false
+                    color: storedArea.pressed ? colBorder : (storedArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colBtnBorder
+                    border.width: 1
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        width: Math.min(parent.width - 16, implicitWidth)
+
+                        Text {
+                            text: "STORED"
+                            color: colMuted
+                            font.family: "Monospace, 'JetBrains Mono', monospace"
+                            font.bold: true
+                            font.pixelSize: 11
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Text {
+                            text: win.getStoredVarsText()
+                            color: colPrompt
+                            font.family: "Monospace, 'JetBrains Mono', monospace"
+                            font.bold: true
+                            font.pixelSize: 12
+                            elide: Text.ElideRight
+                            width: Math.min(parent.parent.width - 80, implicitWidth)
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+
+                    MouseArea {
+                        id: storedArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: storedDialog.open()
+                    }
+
+                    ToolTip.visible: storedArea.containsMouse
+                    ToolTip.text: "Active variables: " + win.getStoredVarsText() + " (Click to inspect/manage)"
+                }
 
                 // FORGET EVERY NAME Button
                 Rectangle {
@@ -636,40 +672,175 @@ ApplicationWindow {
                     ToolTip.visible: forgetArea.containsMouse
                     ToolTip.text: "Erase all custom stored variables from memory"
                 }
+            }
+        }
+    }
 
-                // HELP ? Button
+    // =============================================================
+    // MODAL STORED VARIABLES INSPECTOR DIALOG
+    // =============================================================
+    Popup {
+        id: storedDialog
+        x: 14
+        y: 20
+        width: win.width - 28
+        height: Math.min(win.height - 40, 360)
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: colTapeBg
+            border.color: colBorder
+            border.width: 2
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 14
+            spacing: 10
+
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+
+                Text {
+                    text: "🧩 STORED VARIABLES IN MEMORY"
+                    color: colPrompt
+                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                    font.bold: true
+                    font.pixelSize: 13
+                    Layout.fillWidth: true
+                }
+
                 Rectangle {
-                    Layout.preferredHeight: 48
-                    Layout.preferredWidth: 80
-                    Layout.fillHeight: false
-                    color: helpBtnArea.pressed ? colBorder : (helpBtnArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
-                    border.color: colPrompt
+                    Layout.preferredWidth: 26
+                    Layout.preferredHeight: 26
+                    color: "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: colMuted
+                        font.pixelSize: 12
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: storedDialog.close()
+                    }
+                }
+            }
+
+            // Variables list
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+
+                ColumnLayout {
+                    width: parent.width - 12
+                    spacing: 6
+
+                    Text {
+                        visible: Object.keys(backend.varsMap).length === 0
+                        text: "No custom variables stored yet.\nAssign variables with ':' (e.g. 5: FINGERS or 1..5: VEC)."
+                        color: colMuted
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.pixelSize: 12
+                        font.italic: true
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+
+                    Repeater {
+                        model: Object.keys(backend.varsMap)
+                        delegate: Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 34
+                            color: index % 2 === 0 ? colBtnBg : "transparent"
+                            border.color: colBorder
+                            border.width: 1
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 8
+
+                                Text {
+                                    text: modelData
+                                    color: colPrompt
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                                    font.bold: true
+                                    font.pixelSize: 13
+                                    Layout.preferredWidth: 90
+                                }
+
+                                Text {
+                                    text: "= " + Engine.render(backend.varsMap[modelData], backend.places)
+                                    color: colText
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                                    font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+
+                                Rectangle {
+                                    Layout.preferredWidth: 24
+                                    Layout.preferredHeight: 24
+                                    color: "transparent"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "✕"
+                                        color: colError
+                                        font.pixelSize: 11
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: backend.removeVar(modelData)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bottom action: Clear All Vars
+            RowLayout {
+                Layout.fillWidth: true
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 32
+                    color: colBtnBg
+                    border.color: colError
                     border.width: 1
 
                     Text {
                         anchors.centerIn: parent
-                        text: "HELP ?"
-                        color: colPrompt
+                        text: "Clear All Variables"
+                        color: colError
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.bold: true
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
 
                     MouseArea {
-                        id: helpBtnArea
                         anchors.fill: parent
-                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: helpDialog.open()
+                        onClicked: {
+                            backend.clearVars();
+                            storedDialog.close();
+                        }
                     }
-
-                    ToolTip.visible: helpBtnArea.containsMouse
-                    ToolTip.text: "Open Apple Calculator reference manual (F1)"
                 }
-
-                Item { Layout.fillWidth: true }
             }
         }
     }
