@@ -66,9 +66,9 @@ ApplicationWindow {
             if (keys[i] !== "ANS") userKeys.push(keys[i]);
         }
         if (userKeys.length === 0) {
-            return "nothing yet";
+            return "NOTHING YET";
         }
-        return userKeys.join(", ");
+        return userKeys.map(function(k) { return k.toUpperCase(); }).join(", ");
     }
 
     function evaluateCurrent(isExplain) {
@@ -179,7 +179,7 @@ ApplicationWindow {
         // =============================================================
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 22
+            Layout.preferredHeight: 28
             Layout.fillHeight: false
 
             Text {
@@ -187,11 +187,11 @@ ApplicationWindow {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 text: "ALCALC"
-                color: titleMouseArea.containsMouse ? colPrompt : colMuted
+                color: titleMouseArea.containsMouse ? colPrompt : colText
                 font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
-                font.pixelSize: 11
+                font.pixelSize: 16
                 font.bold: true
-                font.letterSpacing: 2
+                font.letterSpacing: 3
 
                 Behavior on color {
                     ColorAnimation { duration: 150 }
@@ -745,7 +745,7 @@ ApplicationWindow {
 
                     Text {
                         visible: Object.keys(backend.varsMap).length === 0
-                        text: "No custom variables stored yet.\nAssign variables with ':' (e.g. 5: FINGERS or 1..5: VEC)."
+                        text: "NO CUSTOM VARIABLES STORED YET.\nASSIGN VARIABLES WITH ':' (E.G. 5 : FINGERS OR 1..5 : VEC)."
                         color: colMuted
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.pixelSize: 12
@@ -769,7 +769,7 @@ ApplicationWindow {
                                 spacing: 8
 
                                 Text {
-                                    text: modelData
+                                    text: modelData.toUpperCase()
                                     color: colPrompt
                                     font.family: "Monospace, 'JetBrains Mono', monospace"
                                     font.bold: true
@@ -823,7 +823,7 @@ ApplicationWindow {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "Clear All Variables"
+                        text: "CLEAR ALL VARIABLES"
                         color: colError
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.bold: true
@@ -1106,7 +1106,7 @@ ApplicationWindow {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "▶ Insert Sample into Expression Input Box"
+                    text: "▶ INSERT SAMPLE INTO EXPRESSION INPUT BOX"
                     color: colPrompt
                     font.family: "Monospace, 'JetBrains Mono', monospace"
                     font.bold: true
@@ -1280,7 +1280,7 @@ ApplicationWindow {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "OK"
+                    text: "CLOSE"
                     color: colPrompt
                     font.family: "Monospace, 'JetBrains Mono', monospace"
                     font.bold: true
