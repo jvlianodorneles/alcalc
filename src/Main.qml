@@ -722,7 +722,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "🧩 STORED VARIABLES IN MEMORY"
+                    text: "STORED VARIABLES IN MEMORY"
                     color: colPrompt
                     font.family: "Monospace, 'JetBrains Mono', monospace"
                     font.bold: true
@@ -893,7 +893,7 @@ ApplicationWindow {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "📖 APPLE CALCULATOR MANUAL"
+                    text: "APPLE CALCULATOR MANUAL"
                     color: colPrompt
                     font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
                     font.bold: true
@@ -928,7 +928,7 @@ ApplicationWindow {
                 spacing: 4
 
                 Repeater {
-                    model: ["1. SYNTAX", "2. VECTORS", "3. STRINGS/MATH", "4. SAMPLES"]
+                    model: ["SYNTAX", "VECTORS", "STRINGS/MATH", "SAMPLES"]
                     delegate: Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 30
@@ -1147,14 +1147,14 @@ ApplicationWindow {
     }
 
     // =============================================================
-    // MODAL ABOUT DIALOG (Paper Tape Monospace Aesthetic)
+    // MODAL ABOUT DIALOG (Historical Sources & References)
     // =============================================================
     Popup {
         id: aboutDialog
-        x: 16
-        y: 24
-        width: win.width - 32
-        height: Math.min(win.height - 48, 380)
+        x: 12
+        y: 12
+        width: win.width - 24
+        height: Math.min(win.height - 24, 520)
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -1167,15 +1167,15 @@ ApplicationWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 16
-            spacing: 12
+            anchors.margins: 14
+            spacing: 10
 
             // Header
             RowLayout {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "🧮 ABOUT ALCALC"
+                    text: "ABOUT ALCALC"
                     color: colPrompt
                     font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
                     font.bold: true
@@ -1203,17 +1203,14 @@ ApplicationWindow {
                 }
             }
 
-            // App Info Content
-            Rectangle {
+            // Scrollable Content
+            ScrollView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: colBtnBg
-                border.color: colBorder
-                border.width: 1
+                clip: true
 
                 ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
+                    width: parent.width - 12
                     spacing: 10
 
                     Text {
@@ -1221,19 +1218,19 @@ ApplicationWindow {
                         color: colText
                         font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
                         font.bold: true
-                        font.pixelSize: 14
+                        font.pixelSize: 13
                     }
 
                     Text {
-                        text: "Apple Calculator Language for Linux & Omarchy"
+                        text: "Historical Sources & References"
                         color: colPrompt
                         font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
-                        font.pixelSize: 11
                         font.bold: true
+                        font.pixelSize: 12
                     }
 
                     Text {
-                        text: "An expressive array-oriented calculator engine and interactive paper tape workspace inspired by APL, classic Apple Calculator Language, and modern desktop workflows."
+                        text: "This app strictly implements the Apple Calculator Language, created by Jef Raskin in 1979, following Wade Tregaskis's reference implementation for tie-break rules."
                         color: colText
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.pixelSize: 11
@@ -1242,22 +1239,43 @@ ApplicationWindow {
                         Layout.fillWidth: true
                     }
 
-                    Item { Layout.preferredHeight: 4 }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: colBorder
+                    }
 
                     Text {
-                        text: "• Author: Juliano Dorneles\n" +
-                              "• Engine: Apple Calculator Language (ACL) Pure JS / Qt 6 C++\n" +
-                              "• License: MIT License\n" +
-                              "• GitHub: github.com/jvlianodorneles/alcalc"
-                        color: colMuted
+                        textFormat: Text.RichText
+                        text: "<p style='margin:0 0 8px 0;'><b>1.</b> Wade Tregaskis, <i>The Apple Calculator Language</i> (reference implementation and tie-break notes) — <a href='https://wadetregaskis.com/the-apple-calculator-language/' style='color:" + colPrompt + ";'>wadetregaskis.com</a></p>" +
+                              "<p style='margin:0 0 8px 0;'><b>2.</b> Jef Raskin, <i>The Apple Calculator Language Primer</i>, 13 October 1979. The document this page implements, in The Macintosh Project: Selected Papers from Jef Raskin (First Macintosh Designer), Circa 1979, document 14A, version 10. — <a href='https://web.stanford.edu/dept/SUL/sites/mac/primary/docs/bom/language.html' style='color:" + colPrompt + ";'>web.stanford.edu</a></p>" +
+                              "<p style='margin:0 0 8px 0;'><b>3.</b> Alex Soojung-Kim Pang, <i>Making the Macintosh: Technology and Culture in Silicon Valley</i>, Stanford University Libraries, the online archive that published the primer. Its index of primary documents holds the rest of Raskin’s papers from the same period. — <a href='https://web.stanford.edu/dept/SUL/sites/mac/index.html' style='color:" + colPrompt + ";'>web.stanford.edu</a></p>" +
+                              "<p style='margin:0 0 8px 0;'><b>4.</b> Apple Computer, Inc. Records, M1007, Series 3, Box 10, Folder 1, Dept. of Special Collections, Stanford University Libraries. — <a href='https://archives.stanford.edu/catalog/m1007' style='color:" + colPrompt + ";'>archives.stanford.edu</a></p>"
+                        color: colText
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.pixelSize: 10
                         lineHeight: 1.25
                         wrapMode: Text.Wrap
                         Layout.fillWidth: true
+                        onLinkActivated: function(link) { Qt.openUrlExternally(link); }
                     }
 
-                    Item { Layout.fillHeight: true }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: colBorder
+                    }
+
+                    Text {
+                        textFormat: Text.RichText
+                        text: "<span style='color:" + colMuted + ";'>• Author: Juliano Dorneles | License: MIT<br>• Repository: <a href='https://github.com/jvlianodorneles/alcalc' style='color:" + colPrompt + ";'>github.com/jvlianodorneles/alcalc</a></span>"
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.pixelSize: 10
+                        lineHeight: 1.2
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                        onLinkActivated: function(link) { Qt.openUrlExternally(link); }
+                    }
                 }
             }
 
