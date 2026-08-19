@@ -125,21 +125,21 @@ ApplicationWindow {
 
         inputField.text = "";
         win.historyIndex = -1;
-        tapeListView.positionViewAtEnd();
+        tapeListView.positionViewAtBeginning();
     }
 
     function loadSamplesToTape() {
         var samples = [
-            { expr: "6/3+2*5", result: "20" },
-            { expr: "1..9 *13", result: "13 26 39 52 65 78 91 104 117" },
-            { expr: "\"STRESSED\" [8..1]", result: "DESSERTS" },
+            { expr: "32 50 100 212 -32*5/9", result: "0 10 37.7778 100" },
             { expr: "1..100 INSERT +", result: "5050" },
-            { expr: "32 50 100 212 -32*5/9", result: "0 10 37.7778 100" }
+            { expr: "\"STRESSED\" [8..1]", result: "DESSERTS" },
+            { expr: "1..9 *13", result: "13 26 39 52 65 78 91 104 117" },
+            { expr: "6/3+2*5", result: "20" }
         ];
         for (var i = 0; i < samples.length; i++) {
             backend.saveHistoryEntry(samples[i].expr, samples[i].result, false);
         }
-        tapeListView.positionViewAtEnd();
+        tapeListView.positionViewAtBeginning();
     }
 
     // Global Shortcuts
@@ -177,7 +177,7 @@ ApplicationWindow {
         }
 
         // =============================================================
-        // MAIN PAPER TAPE CONTAINER (Takes ALL Available Vertical Space)
+        // MAIN PAPER TAPE CONTAINER (Feeds Bottom-to-Top)
         // =============================================================
         Rectangle {
             Layout.fillWidth: true
@@ -192,12 +192,15 @@ ApplicationWindow {
                 anchors.margins: 12
                 clip: true
                 spacing: 10
+                verticalLayoutDirection: ListView.BottomToTop
                 model: backend.historyList
 
-                // Initial instructions at top of tape
-                header: ColumnLayout {
+                // Guide text at top (above oldest items in BottomToTop mode)
+                footer: ColumnLayout {
                     width: tapeListView.width
                     spacing: 6
+
+                    Item { Layout.preferredHeight: 6 }
 
                     Text {
                         text: "Type an expression and press Return. Notes to yourself go in {braces}."
@@ -209,7 +212,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
                     }
 
-                    Item { Layout.preferredHeight: 6 }
+                    Item { Layout.preferredHeight: 8 }
                 }
 
                 delegate: ColumnLayout {
@@ -278,13 +281,11 @@ ApplicationWindow {
                     active: true
                     policy: ScrollBar.AsNeeded
                 }
-
-                Component.onCompleted: tapeListView.positionViewAtEnd()
             }
         }
 
         // =============================================================
-        // INPUT BAR WITH SEPARATE RETURN BUTTON (NO OVERLAP)
+        // INPUT BAR WITH SEPARATE RETURN BUTTON (IDENTICAL 36PX HEIGHT)
         // =============================================================
         RowLayout {
             Layout.fillWidth: true
@@ -294,10 +295,10 @@ ApplicationWindow {
             Layout.fillHeight: false
             spacing: 8
 
-            // Enclosed Input Box (Standalone rectangle with border)
+            // Enclosed Input Box (Height: 36px)
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 36
+                Layout.fillHeight: true
                 color: colTapeBg
                 border.color: inputField.activeFocus ? colText : colBorder
                 border.width: 1
@@ -377,12 +378,11 @@ ApplicationWindow {
                 }
             }
 
-            // Standalone RETURN Button (Separate box with 8px spacing, zero overlap)
+            // Standalone RETURN Button (Exact same 36px height, matching top & bottom)
             Button {
                 id: returnBtn
                 Layout.preferredWidth: 84
-                Layout.preferredHeight: 36
-                Layout.fillHeight: false
+                Layout.fillHeight: true
                 padding: 0
                 contentItem: Text {
                     anchors.centerIn: parent
