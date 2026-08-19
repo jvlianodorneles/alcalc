@@ -8,9 +8,9 @@ import "Engine.js" as Engine
 ApplicationWindow {
     id: win
     width: 440
-    height: 580
+    height: 600
     minimumWidth: 360
-    minimumHeight: 420
+    minimumHeight: 460
     visible: true
     title: "Alcalc - Paper Tape"
 
@@ -50,22 +50,21 @@ ApplicationWindow {
     }
 
     function evaluateCurrent(isExplain) {
-        var rawExpr = inputField.text.trim();
+        var rawExpr = inputField.text.toUpperCase().trim();
         if (rawExpr.length === 0) return;
 
         // Check for interactive helper commands
-        var upper = rawExpr.toUpperCase();
-        if (upper === "CLEAR" || upper === "CLEAR TAPE") {
+        if (rawExpr === "CLEAR" || rawExpr === "CLEAR TAPE") {
             backend.clearHistory();
             inputField.text = "";
             return;
         }
-        if (upper === "FORGET" || upper === "FORGET ALL") {
+        if (rawExpr === "FORGET" || rawExpr === "FORGET ALL") {
             backend.clearVars();
             inputField.text = "";
             return;
         }
-        if (upper === "HELP" || upper === "?") {
+        if (rawExpr === "HELP" || rawExpr === "?") {
             helpDialog.open();
             inputField.text = "";
             return;
@@ -133,7 +132,7 @@ ApplicationWindow {
         var samples = [
             { expr: "6/3+2*5", result: "20" },
             { expr: "1..9 *13", result: "13 26 39 52 65 78 91 104 117" },
-            { expr: "\"stressed\" [8..1]", result: "desserts" },
+            { expr: "\"STRESSED\" [8..1]", result: "DESSERTS" },
             { expr: "1..100 INSERT +", result: "5050" },
             { expr: "32 50 100 212 -32*5/9", result: "0 10 37.7778 100" }
         ];
@@ -161,7 +160,7 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 8
+        spacing: 10
 
         // =============================================================
         // HEADER: PAPER TAPE LABEL (Fixed Height)
@@ -236,6 +235,7 @@ ApplicationWindow {
                             color: colText
                             font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
                             font.pixelSize: 14
+                            font.bold: true
                             wrapMode: Text.Wrap
                             Layout.fillWidth: true
 
@@ -243,7 +243,7 @@ ApplicationWindow {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    inputField.text = modelData.expr;
+                                    inputField.text = modelData.expr.toUpperCase();
                                     inputField.cursorPosition = modelData.expr.length;
                                     inputField.forceActiveFocus();
                                 }
@@ -284,139 +284,158 @@ ApplicationWindow {
         }
 
         // =============================================================
-        // INPUT BAR (STRICT SINGLE-LINE 32PX HEIGHT, ZERO EXPANSION)
+        // INPUT BAR WITH SEPARATE RETURN BUTTON (NO OVERLAP)
         // =============================================================
-        Rectangle {
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 34
-            Layout.minimumHeight: 34
-            Layout.maximumHeight: 34
+            Layout.preferredHeight: 36
+            Layout.minimumHeight: 36
+            Layout.maximumHeight: 36
             Layout.fillHeight: false
-            color: colTapeBg
-            border.color: inputField.activeFocus ? colText : colBorder
-            border.width: 1
+            spacing: 8
 
-            RowLayout {
-                anchors.fill: parent
-                spacing: 0
+            // Enclosed Input Box (Standalone rectangle with border)
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 36
+                color: colTapeBg
+                border.color: inputField.activeFocus ? colText : colBorder
+                border.width: 1
 
-                // Prompt "!"
-                Text {
-                    text: "!"
-                    color: colPrompt
-                    font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
-                    font.pixelSize: 14
-                    font.bold: true
-                    Layout.leftMargin: 8
-                    Layout.rightMargin: 8
-                    Layout.alignment: Qt.AlignVCenter
-                }
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 0
 
-                // Single-line input field
-                TextField {
-                    id: inputField
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    color: colText
-                    font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
-                    font.pixelSize: 13
-                    background: null
-                    padding: 0
-                    leftPadding: 0
-                    rightPadding: 6
-                    verticalAlignment: TextInput.AlignVCenter
-                    focus: true
-                    selectByMouse: true
+                    // Prompt "!" with equal margins
+                    Text {
+                        text: "!"
+                        color: colPrompt
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                        font.pixelSize: 14
+                        font.bold: true
+                        Layout.leftMargin: 10
+                        Layout.rightMargin: 8
+                        Layout.alignment: Qt.AlignVCenter
+                    }
 
-                    Keys.onPressed: function(event) {
-                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                            if (event.modifiers & Qt.ShiftModifier) {
-                                win.evaluateCurrent(true);
-                            } else {
-                                win.evaluateCurrent(false);
+                    // Single-line uppercase input field
+                    TextField {
+                        id: inputField
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        color: colText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                        font.pixelSize: 14
+                        font.capitalization: Font.AllUppercase
+                        background: null
+                        padding: 0
+                        leftPadding: 0
+                        rightPadding: 8
+                        verticalAlignment: TextInput.AlignVCenter
+                        focus: true
+                        selectByMouse: true
+
+                        onTextChanged: {
+                            var upper = text.toUpperCase();
+                            if (text !== upper) {
+                                var cur = cursorPosition;
+                                text = upper;
+                                cursorPosition = cur;
                             }
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Up) {
-                            var hist = backend.historyList;
-                            if (hist && hist.length > 0) {
-                                win.historyIndex = Math.min(hist.length - 1, win.historyIndex + 1);
-                                inputField.text = hist[win.historyIndex].expr;
-                                inputField.cursorPosition = inputField.text.length;
+                        }
+
+                        Keys.onPressed: function(event) {
+                            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                if (event.modifiers & Qt.ShiftModifier) {
+                                    win.evaluateCurrent(true);
+                                } else {
+                                    win.evaluateCurrent(false);
+                                }
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Up) {
+                                var hist = backend.historyList;
+                                if (hist && hist.length > 0) {
+                                    win.historyIndex = Math.min(hist.length - 1, win.historyIndex + 1);
+                                    inputField.text = hist[win.historyIndex].expr.toUpperCase();
+                                    inputField.cursorPosition = inputField.text.length;
+                                }
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Down) {
+                                var hist2 = backend.historyList;
+                                if (hist2 && win.historyIndex > 0) {
+                                    win.historyIndex--;
+                                    inputField.text = hist2[win.historyIndex].expr.toUpperCase();
+                                    inputField.cursorPosition = inputField.text.length;
+                                } else if (win.historyIndex === 0) {
+                                    win.historyIndex = -1;
+                                    inputField.text = "";
+                                }
+                                event.accepted = true;
                             }
-                            event.accepted = true;
-                        } else if (event.key === Qt.Key_Down) {
-                            var hist2 = backend.historyList;
-                            if (hist2 && win.historyIndex > 0) {
-                                win.historyIndex--;
-                                inputField.text = hist2[win.historyIndex].expr;
-                                inputField.cursorPosition = inputField.text.length;
-                            } else if (win.historyIndex === 0) {
-                                win.historyIndex = -1;
-                                inputField.text = "";
-                            }
-                            event.accepted = true;
                         }
                     }
                 }
+            }
 
-                // Integrated RETURN Button (Dark end segment of the bar)
-                Rectangle {
-                    Layout.preferredWidth: 76
-                    Layout.fillHeight: true
-                    color: returnMouseArea.pressed ? Qt.darker(colReturnBg, 1.2) : colReturnBg
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "RETURN"
-                        color: colReturnFg
-                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
-                        font.bold: true
-                        font.pixelSize: 11
-                        font.letterSpacing: 1
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    MouseArea {
-                        id: returnMouseArea
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: win.evaluateCurrent(false)
-                    }
+            // Standalone RETURN Button (Separate box with 8px spacing, zero overlap)
+            Button {
+                id: returnBtn
+                Layout.preferredWidth: 84
+                Layout.preferredHeight: 36
+                Layout.fillHeight: false
+                padding: 0
+                contentItem: Text {
+                    anchors.centerIn: parent
+                    text: "RETURN"
+                    color: colReturnFg
+                    font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                    font.bold: true
+                    font.pixelSize: 11
+                    font.letterSpacing: 1
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
+                background: Rectangle {
+                    color: parent.down ? Qt.darker(colReturnBg, 1.2) : colReturnBg
+                    border.color: colReturnBg
+                    border.width: 1
+                }
+                onClicked: win.evaluateCurrent(false)
             }
         }
 
         // =============================================================
-        // BOTTOM BUTTONS & STATUS BAR (Fixed Compact Height)
+        // BOTTOM BUTTONS & STATUS BAR (Doubled Size: 52px & 48px)
         // =============================================================
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: false
-            spacing: 5
+            spacing: 6
 
-            // Row 1: PLACES, RADIANS, STORED, CLEAR THE TAPE
+            // Row 1: PLACES, RADIANS, STORED, CLEAR THE TAPE (Height: 52px)
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 28
+                Layout.preferredHeight: 52
+                Layout.minimumHeight: 52
+                Layout.maximumHeight: 52
                 Layout.fillHeight: false
-                spacing: 5
+                spacing: 6
 
                 // PLACES button
                 Button {
-                    Layout.preferredHeight: 28
-                    Layout.preferredWidth: 78
+                    Layout.preferredHeight: 52
+                    Layout.preferredWidth: 84
                     Layout.fillHeight: false
                     padding: 0
                     contentItem: Row {
                         anchors.centerIn: parent
-                        spacing: 4
+                        spacing: 5
                         Text {
                             text: "PLACES"
                             color: colMuted
                             font.family: "Monospace, 'JetBrains Mono', monospace"
                             font.bold: true
-                            font.pixelSize: 10
+                            font.pixelSize: 12
                             verticalAlignment: Text.AlignVCenter
                         }
                         Text {
@@ -424,7 +443,7 @@ ApplicationWindow {
                             color: colPrompt
                             font.family: "Monospace, 'JetBrains Mono', monospace"
                             font.bold: true
-                            font.pixelSize: 10
+                            font.pixelSize: 13
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
@@ -443,19 +462,19 @@ ApplicationWindow {
 
                 // RADIANS button
                 Button {
-                    Layout.preferredHeight: 28
-                    Layout.preferredWidth: 84
+                    Layout.preferredHeight: 52
+                    Layout.preferredWidth: 92
                     Layout.fillHeight: false
                     padding: 0
                     contentItem: Row {
                         anchors.centerIn: parent
-                        spacing: 4
+                        spacing: 5
                         Text {
                             text: "RADIANS"
                             color: colMuted
                             font.family: "Monospace, 'JetBrains Mono', monospace"
                             font.bold: true
-                            font.pixelSize: 10
+                            font.pixelSize: 12
                             verticalAlignment: Text.AlignVCenter
                         }
                         Text {
@@ -463,7 +482,7 @@ ApplicationWindow {
                             color: colPrompt
                             font.family: "Monospace, 'JetBrains Mono', monospace"
                             font.bold: true
-                            font.pixelSize: 10
+                            font.pixelSize: 13
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
@@ -480,26 +499,27 @@ ApplicationWindow {
                 // STORED button
                 Button {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 28
+                    Layout.preferredHeight: 52
                     Layout.fillHeight: false
                     padding: 0
                     contentItem: Row {
                         anchors.centerIn: parent
-                        spacing: 4
-                        width: Math.min(parent.width - 8, implicitWidth)
+                        spacing: 5
+                        width: Math.min(parent.width - 10, implicitWidth)
                         Text {
                             text: "STORED"
                             color: colMuted
                             font.family: "Monospace, 'JetBrains Mono', monospace"
                             font.bold: true
-                            font.pixelSize: 10
+                            font.pixelSize: 12
                             verticalAlignment: Text.AlignVCenter
                         }
                         Text {
                             text: win.getStoredVarsText()
                             color: colPrompt
                             font.family: "Monospace, 'JetBrains Mono', monospace"
-                            font.pixelSize: 10
+                            font.bold: true
+                            font.pixelSize: 12
                             elide: Text.ElideRight
                             width: Math.min(100, implicitWidth)
                             verticalAlignment: Text.AlignVCenter
@@ -516,8 +536,8 @@ ApplicationWindow {
 
                 // CLEAR THE TAPE button
                 Button {
-                    Layout.preferredHeight: 28
-                    Layout.preferredWidth: 114
+                    Layout.preferredHeight: 52
+                    Layout.preferredWidth: 124
                     Layout.fillHeight: false
                     padding: 0
                     contentItem: Text {
@@ -526,7 +546,7 @@ ApplicationWindow {
                         color: colMuted
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.bold: true
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -541,16 +561,18 @@ ApplicationWindow {
                 }
             }
 
-            // Row 2: FORGET EVERY NAME & HELP
+            // Row 2: FORGET EVERY NAME & HELP (Height: 48px)
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 26
+                Layout.preferredHeight: 48
+                Layout.minimumHeight: 48
+                Layout.maximumHeight: 48
                 Layout.fillHeight: false
-                spacing: 5
+                spacing: 6
 
                 Button {
-                    Layout.preferredHeight: 26
-                    Layout.preferredWidth: 130
+                    Layout.preferredHeight: 48
+                    Layout.preferredWidth: 150
                     Layout.fillHeight: false
                     padding: 0
                     contentItem: Text {
@@ -559,7 +581,7 @@ ApplicationWindow {
                         color: colMuted
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.bold: true
-                        font.pixelSize: 9
+                        font.pixelSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -575,8 +597,8 @@ ApplicationWindow {
 
                 // HELP Button
                 Button {
-                    Layout.preferredHeight: 26
-                    Layout.preferredWidth: 64
+                    Layout.preferredHeight: 48
+                    Layout.preferredWidth: 80
                     Layout.fillHeight: false
                     padding: 0
                     contentItem: Text {
@@ -585,7 +607,7 @@ ApplicationWindow {
                         color: colPrompt
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.bold: true
-                        font.pixelSize: 10
+                        font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -698,7 +720,7 @@ ApplicationWindow {
                     // Strings & Slicing
                     Text {
                         text: "STRINGS & 1-BASED INDEXING\n" +
-                              "• String slice: \"stressed\" [8..1] = desserts\n" +
+                              "• String slice: \"STRESSED\" [8..1] = DESSERTS\n" +
                               "• Array index: (10 20 30 40)[2 4] = 20 40\n" +
                               "• ASCII code: \"A\" NUMBER = 65\n" +
                               "• Char code: 65 LETTER = A"
@@ -715,7 +737,7 @@ ApplicationWindow {
                               "• Stats: SUM, MEAN, MEDIAN, NORM\n" +
                               "• Primes: 1..30 PRIMES = 2 3 5 7 11 13 17 19 23 29\n" +
                               "• Math: SQRT, ABS, FACT, SIN, COS, LOG, LN, MOD, TOTHE (^)\n" +
-                              "• Store var: 5 : fingers (fingers * 2 = 10)\n" +
+                              "• Store var: 5 : FINGERS (FINGERS * 2 = 10)\n" +
                               "• Settings: 4 : PLACES, 1 : RADIANS, ANS"
                         color: colText
                         font.family: "Monospace, 'JetBrains Mono', monospace"
@@ -749,7 +771,7 @@ ApplicationWindow {
 
                 Button {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 30
+                    Layout.preferredHeight: 34
                     padding: 0
                     contentItem: Text {
                         anchors.centerIn: parent
