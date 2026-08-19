@@ -25,16 +25,15 @@
 
 ## ✨ Features
 
+- 📜 **Authentic Paper Tape Interface:** Minimalist, high-contrast monospace paper tape calculation environment matching classic desktop calculators.
 - 🧮 **Vectorized & Array-Oriented Math:** Calculate across vectors/clumps seamlessly (e.g. `1..100 INSERT +` → `5050`, `32 50 100 212 -32*5/9` → `0 10 37.7778 100`).
 - ⚡ **Sequential Left-to-Right Evaluation:** No confusing operator precedence rules (`6/3+2*5` evaluates as `20`; use parentheses `(6/3)+(2*5)` for `12`).
-- 🔍 **Step-by-Step Explain Mode:** Inspect the reduction trace of every intermediate calculation step.
-- 💡 **Smart Error Assistance:** Friendly diagnosis and 1-click auto-fix suggestions for common syntax mistakes.
-- ⌨️ **Keyboard-First REPL:** Immediate autofocus, history navigation with `↑`/`↓` arrow keys, autocompletion with `Tab`, and quick clear/exit with `Esc`.
-- 🎛️ **Interactive Operator Toolbar & Keypad:** Quick-insert chips for arithmetic, range generators (`..`), fold reductions (`INSERT`), math monads (`SUM`, `MEAN`, `NORM`, `PRIMES`, `FACT`), string functions, and constants.
-- 📜 **Searchable Calculation Tape (History):** Full persistent history with 1-click copy, re-evaluation, and export.
-- 📚 **Curated Formula & Sample Library:** Over 40 built-in interactive formulas (Basic arithmetic, sequences, cryptography, parlour tricks, and physics formulas).
-- 🧩 **Variables & Custom Macros:** Inspect in-memory variables and create reusable expression templates (e.g. `fahrenheit`: `x - 32 * 5 / 9`).
-- 📖 **Built-in Cheatsheet:** Complete syntax and operator reference manual built right into the app.
+- 🔄 **Bottom-to-Top Paper Feed:** Calculations appear at the base of the tape and feed upward naturally as you compute.
+- 🔍 **Step-by-Step Explain Mode:** Press `Shift+Return` to trace intermediate reductions step-by-step.
+- 💡 **Smart Error Assistance:** Friendly diagnostics and syntax guidance for parentheses, quotes, and negative number formatting.
+- ⌨️ **Keyboard-First Experience:** Autofocus single-line uppercase input bar, history navigation (`↑`/`↓`), and quick clear (`Ctrl+K` / `Ctrl+L`).
+- 🧩 **Variables & Memory Inspector:** Inspect stored variables (`STORED` button) with 1-click management.
+- 📖 **Interactive Tabbed Manual (`F1` / `HELP ?`):** Compact 4-tab quick reference with 1-click sample expression insertion.
 - 💻 **Fast CLI Tool:** Evaluate expressions directly from your shell (`alcalc "1..100 INSERT +"`, `alcalc --explain "5 TOTHE 2 + 1"`).
 - 🎨 **Adaptive Theme Integration:** Dynamically adapts to dark/light mode and desktop font scaling.
 
