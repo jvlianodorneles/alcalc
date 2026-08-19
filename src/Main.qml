@@ -1205,12 +1205,16 @@ ApplicationWindow {
 
             // Scrollable Content
             ScrollView {
+                id: aboutScrollView
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                contentWidth: availableWidth
 
                 ColumnLayout {
-                    width: parent.width - 12
+                    width: aboutScrollView.availableWidth
                     spacing: 10
 
                     Text {
@@ -1219,6 +1223,8 @@ ApplicationWindow {
                         font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
                         font.bold: true
                         font.pixelSize: 13
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
                     }
 
                     Text {
@@ -1227,6 +1233,8 @@ ApplicationWindow {
                         font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
                         font.bold: true
                         font.pixelSize: 12
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
                     }
 
                     Text {
