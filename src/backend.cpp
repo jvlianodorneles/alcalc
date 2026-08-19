@@ -7,6 +7,7 @@
 #include <QGuiApplication>
 #include <QJSEngine>
 #include <QJSValue>
+#include <QJSValueIterator>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -376,6 +377,26 @@ bool Backend::evaluateCli(const QString &expr, bool explain, bool jsonOutput) {
                 std::cout << text.toStdString() << std::endl;
             }
         }
+    }
+
+    // Sync machine vars/settings
+    if (result.hasProperty(QStringLiteral("machine"))) {
+        QJSValue machine = result.property(QStringLiteral("machine"));
+        if (machine.hasProperty(QStringLiteral("vars"))) {
+            QJSValue vars = machine.property(QStringLiteral("vars"));
+            QJSValueIterator it(vars);
+            while (it.hasNext()) {
+                it.next();
+                m_vars.insert(it.name(), it.value().toVariant());
+            }
+        }
+        if (machine.hasProperty(QStringLiteral("places"))) {
+            m_places = machine.property(QStringLiteral("places")).toInt();
+        }
+        if (machine.hasProperty(QStringLiteral("radians"))) {
+            m_radians = machine.property(QStringLiteral("radians")).toInt();
+        }
+        saveState();
     }
 
     return kind != QStringLiteral("error");

@@ -238,9 +238,6 @@ function tokenize(src) {
         toks.push({ k: 'special', v: m.text });
         continue;
       }
-      if (m.text.length > 1 && m.text === m.text.toUpperCase() && /[A-Z]/.test(m.text)) {
-        oops('I DO NOT KNOW THE WORD "' + m.text + '"');
-      }
       toks.push({ k: 'name', v: m.text });
       continue;
     }
@@ -284,18 +281,34 @@ class Machine {
   }
 
   lookup(name) {
-    if (Object.prototype.hasOwnProperty.call(this.vars, name)) {
+    if (this.vars && (Object.prototype.hasOwnProperty.call(this.vars, name) || this.vars[name] !== undefined)) {
       let val = this.vars[name];
       if (typeof val === 'string') {
         try {
           val = JSON.parse(val);
         } catch (_) {}
       }
-      if (val && Array.isArray(val.items)) {
-        return clump(val.items.slice());
+      if (val && typeof val === 'object' && val.items !== undefined) {
+        const out = [];
+        const len = val.items.length !== undefined ? val.items.length : 0;
+        for (let i = 0; i < len; i++) {
+          const it = val.items[i];
+          if (it) {
+            out.push({ t: it.t || 'n', v: it.v !== undefined ? it.v : 0 });
+          }
+        }
+        return clump(out);
       }
       if (typeof val === 'number') {
         return num(val);
+      }
+      if (Array.isArray(val) || (val && typeof val.length === 'number')) {
+        const out = [];
+        for (let i = 0; i < val.length; i++) {
+          const x = val[i];
+          out.push({ t: 'n', v: typeof x === 'number' ? x : (x && x.v !== undefined ? x.v : parseFloat(x) || 0) });
+        }
+        return clump(out);
       }
     }
     return { items: [{ t: 'n', v: 0 }], unset: true };
