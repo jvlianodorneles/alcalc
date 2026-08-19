@@ -285,20 +285,24 @@ ApplicationWindow {
         }
 
         // =============================================================
-        // INPUT BAR WITH SEPARATE RETURN BUTTON (IDENTICAL 36PX HEIGHT)
+        // INPUT BAR WITH RETURN RECTANGLE (100% IDENTICAL BOX HEIGHT: 38PX)
         // =============================================================
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            Layout.minimumHeight: 36
-            Layout.maximumHeight: 36
+            Layout.preferredHeight: 38
+            Layout.minimumHeight: 38
+            Layout.maximumHeight: 38
             Layout.fillHeight: false
             spacing: 8
 
-            // Enclosed Input Box (Height: 36px)
+            // Enclosed Input Box (Height: 38px, Border: 1px)
             Rectangle {
+                id: inputRectBox
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: 38
+                Layout.minimumHeight: 38
+                Layout.maximumHeight: 38
+                Layout.fillHeight: false
                 color: colTapeBg
                 border.color: inputField.activeFocus ? colText : colBorder
                 border.width: 1
@@ -378,13 +382,19 @@ ApplicationWindow {
                 }
             }
 
-            // Standalone RETURN Button (Exact same 36px height, matching top & bottom)
-            Button {
-                id: returnBtn
+            // Standalone RETURN Box (Exact same Rectangle box, Height: 38px, Border: 1px)
+            Rectangle {
+                id: returnRectBox
                 Layout.preferredWidth: 84
-                Layout.fillHeight: true
-                padding: 0
-                contentItem: Text {
+                Layout.preferredHeight: 38
+                Layout.minimumHeight: 38
+                Layout.maximumHeight: 38
+                Layout.fillHeight: false
+                color: returnMouseArea.pressed ? Qt.darker(colReturnBg, 1.2) : colReturnBg
+                border.color: colReturnBg
+                border.width: 1
+
+                Text {
                     anchors.centerIn: parent
                     text: "RETURN"
                     color: colReturnFg
@@ -395,17 +405,18 @@ ApplicationWindow {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                background: Rectangle {
-                    color: parent.down ? Qt.darker(colReturnBg, 1.2) : colReturnBg
-                    border.color: colReturnBg
-                    border.width: 1
+
+                MouseArea {
+                    id: returnMouseArea
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: win.evaluateCurrent(false)
                 }
-                onClicked: win.evaluateCurrent(false)
             }
         }
 
         // =============================================================
-        // BOTTOM BUTTONS & STATUS BAR (Doubled Size: 52px & 48px)
+        // BOTTOM BUTTONS & STATUS BAR (Full Height with Zero Insets: 52px & 48px)
         // =============================================================
         ColumnLayout {
             Layout.fillWidth: true
@@ -426,7 +437,7 @@ ApplicationWindow {
                     Layout.preferredHeight: 52
                     Layout.preferredWidth: 84
                     Layout.fillHeight: false
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Row {
                         anchors.centerIn: parent
                         spacing: 5
@@ -465,7 +476,7 @@ ApplicationWindow {
                     Layout.preferredHeight: 52
                     Layout.preferredWidth: 92
                     Layout.fillHeight: false
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Row {
                         anchors.centerIn: parent
                         spacing: 5
@@ -501,7 +512,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
                     Layout.fillHeight: false
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Row {
                         anchors.centerIn: parent
                         spacing: 5
@@ -539,7 +550,7 @@ ApplicationWindow {
                     Layout.preferredHeight: 52
                     Layout.preferredWidth: 124
                     Layout.fillHeight: false
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: "CLEAR THE TAPE"
@@ -574,7 +585,7 @@ ApplicationWindow {
                     Layout.preferredHeight: 48
                     Layout.preferredWidth: 150
                     Layout.fillHeight: false
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: "FORGET EVERY NAME"
@@ -600,7 +611,7 @@ ApplicationWindow {
                     Layout.preferredHeight: 48
                     Layout.preferredWidth: 80
                     Layout.fillHeight: false
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: "HELP ?"
@@ -666,7 +677,7 @@ ApplicationWindow {
                 Button {
                     Layout.preferredWidth: 26
                     Layout.preferredHeight: 26
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: "✕"
@@ -772,7 +783,7 @@ ApplicationWindow {
                 Button {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 34
-                    padding: 0
+                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
                     contentItem: Text {
                         anchors.centerIn: parent
                         text: "▶ Insert Sample Calculations to Tape"
