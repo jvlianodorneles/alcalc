@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Main.qml</file>
+        <file>Engine.js</file>
+        <file>components/CalcView.qml</file>
+        <file>components/TapeView.qml</file>
+        <file>components/FormulasView.qml</file>
+        <file>components/VarsMacrosView.qml</file>
+        <file>components/CheatsheetView.qml</file>
+        <file alias="icons/alcalc.svg">../icons/alcalc.svg</file>
+    </qresource>
+</RCC>

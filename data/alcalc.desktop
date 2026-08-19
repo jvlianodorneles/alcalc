@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Alcalc
+GenericName=Calculator
+Comment=Apple Calculator Language (ACL) array-oriented calculator
+Exec=alcalc
+Icon=alcalc
+Terminal=false
+Categories=Utility;Calculator;Science;Math;
+Keywords=calculator;calc;math;apl;apple;clump;vector;formula;arithmetic;
+StartupWMClass=alcalc

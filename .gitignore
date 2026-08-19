@@ -1,0 +1,12 @@
+# Build Artifacts
+alcalc
+*.o
+moc_*
+qrc_*
+Makefile
+.qmake.stash
+moc_predefs.h
+build/
+build-*/
+.cache/
+.DS_Store
