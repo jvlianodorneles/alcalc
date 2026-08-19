@@ -175,56 +175,39 @@ ApplicationWindow {
         spacing: 10
 
         // =============================================================
-        // HEADER: TITLE & ABOUT ICON BUTTON (Right Side)
+        // HEADER: CLICKABLE ALCALC TITLE (Opens About Dialog)
         // =============================================================
-        RowLayout {
+        Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 22
             Layout.fillHeight: false
-            spacing: 8
 
             Text {
-                text: "PAPER TAPE"
-                color: colMuted
+                id: titleText
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                text: "ALCALC"
+                color: titleMouseArea.containsMouse ? colPrompt : colMuted
                 font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
                 font.pixelSize: 11
                 font.bold: true
                 font.letterSpacing: 2
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
+
+                Behavior on color {
+                    ColorAnimation { duration: 150 }
+                }
             }
 
-            // About Icon Button (Right side of title bar)
-            Rectangle {
-                id: aboutIconBtn
-                Layout.preferredWidth: 22
-                Layout.preferredHeight: 22
-                Layout.alignment: Qt.AlignVCenter
-                color: aboutIconArea.pressed ? colBorder : (aboutIconArea.containsMouse ? Qt.lighter(colBtnBg, 1.1) : "transparent")
-                border.color: aboutIconArea.containsMouse ? colBtnBorder : "transparent"
-                border.width: 1
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "ℹ"
-                    color: aboutIconArea.containsMouse ? colPrompt : colMuted
-                    font.pixelSize: 13
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                MouseArea {
-                    id: aboutIconArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: aboutDialog.open()
-                }
-
-                ToolTip.visible: aboutIconArea.containsMouse
-                ToolTip.text: "About Alcalc"
+            MouseArea {
+                id: titleMouseArea
+                anchors.fill: titleText
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: aboutDialog.open()
             }
+
+            ToolTip.visible: titleMouseArea.containsMouse
+            ToolTip.text: "About Alcalc"
         }
 
         // =============================================================
