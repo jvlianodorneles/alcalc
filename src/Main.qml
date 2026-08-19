@@ -36,6 +36,28 @@ ApplicationWindow {
 
     // History navigation index
     property int historyIndex: -1
+    property int sampleIndex: 0
+    readonly property var sampleList: [
+        "6/3+2*5",
+        "1..100 INSERT +",
+        "\"STRESSED\" [8..1]",
+        "5 : FINGERS",
+        "1..30 PRIMES",
+        "32 50 100 212 -32*5/9",
+        "1..5 INSERT *",
+        "(10 20 30) MEAN"
+    ]
+
+    function insertSampleToInput(sampleText) {
+        if (!sampleText) {
+            sampleText = sampleList[sampleIndex % sampleList.length];
+            sampleIndex++;
+        }
+        inputField.text = sampleText.toUpperCase();
+        inputField.cursorPosition = inputField.text.length;
+        helpDialog.close();
+        inputField.forceActiveFocus();
+    }
 
     function getStoredVarsText() {
         var keys = Object.keys(backend.varsMap || {});
@@ -125,20 +147,6 @@ ApplicationWindow {
 
         inputField.text = "";
         win.historyIndex = -1;
-        tapeListView.positionViewAtBeginning();
-    }
-
-    function loadSamplesToTape() {
-        var samples = [
-            { expr: "32 50 100 212 -32*5/9", result: "0 10 37.7778 100" },
-            { expr: "1..100 INSERT +", result: "5050" },
-            { expr: "\"STRESSED\" [8..1]", result: "DESSERTS" },
-            { expr: "1..9 *13", result: "13 26 39 52 65 78 91 104 117" },
-            { expr: "6/3+2*5", result: "20" }
-        ];
-        for (var i = 0; i < samples.length; i++) {
-            backend.saveHistoryEntry(samples[i].expr, samples[i].result, false);
-        }
         tapeListView.positionViewAtBeginning();
     }
 
@@ -814,17 +822,19 @@ ApplicationWindow {
     }
 
     // =============================================================
-    // MODAL HELP DIALOG (Paper Tape Monospace Aesthetic)
+    // MODAL TABBED HELP DIALOG (Clean, Compact, No Scrolling Needed)
     // =============================================================
     Popup {
         id: helpDialog
         x: 12
         y: 12
         width: win.width - 24
-        height: win.height - 24
+        height: Math.min(win.height - 24, 460)
         modal: true
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        property int currentTab: 0
 
         background: Rectangle {
             color: colTapeBg
@@ -834,17 +844,17 @@ ApplicationWindow {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 10
+            anchors.margins: 12
+            spacing: 8
 
             // Header
             RowLayout {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "📖 APPLE CALCULATOR LANGUAGE HELP"
+                    text: "📖 APPLE CALCULATOR MANUAL"
                     color: colPrompt
-                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                    font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
                     font.bold: true
                     font.pixelSize: 13
                     Layout.fillWidth: true
@@ -870,124 +880,227 @@ ApplicationWindow {
                 }
             }
 
-            // Help manual scrollable content
-            ScrollView {
+            // Tab Navigation Bar
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                spacing: 4
+
+                Repeater {
+                    model: ["1. SYNTAX", "2. VECTORS", "3. STRINGS/MATH", "4. SAMPLES"]
+                    delegate: Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 30
+                        color: helpDialog.currentTab === index ? colPrompt : colBtnBg
+                        border.color: helpDialog.currentTab === index ? colPrompt : colBtnBorder
+                        border.width: 1
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData
+                            color: helpDialog.currentTab === index ? "#ffffff" : colMuted
+                            font.family: "Monospace, 'JetBrains Mono', monospace"
+                            font.bold: true
+                            font.pixelSize: 10
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: helpDialog.currentTab = index
+                        }
+                    }
+                }
+            }
+
+            // Tab Contents (Fit 100% vertically without scrolling)
+            Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                clip: true
+                color: colBtnBg
+                border.color: colBorder
+                border.width: 1
 
+                // Tab 0: Syntax & Key Principles
                 ColumnLayout {
-                    width: parent.width - 12
-                    spacing: 12
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+                    visible: helpDialog.currentTab === 0
 
-                    // Principles
                     Text {
-                        text: "KEY PRINCIPLES\n" +
-                              "• Left-to-right evaluation: 6/3+2*5 = 20 (no operator precedence).\n" +
-                              "• Parentheses for grouping: (6/3)+(2*5) = 12.\n" +
-                              "• Negative numbers: Use '_' prefix with no space (e.g. _5 + 10 = 5).\n" +
-                              "• Comments: Text inside {curly braces} is ignored."
+                        text: "• LEFT-TO-RIGHT EVALUATION (No operator precedence):\n" +
+                              "  6 / 3 + 2 * 5  ➔  20\n\n" +
+                              "• PARENTHESES FOR GROUPING:\n" +
+                              "  (6 / 3) + (2 * 5)  ➔  12\n\n" +
+                              "• NEGATIVE NUMBERS (_ prefix, no space):\n" +
+                              "  _5 + 10  ➔  5\n\n" +
+                              "• INLINE NOTES & COMMENTS:\n" +
+                              "  100 * 1.2 {tax included}\n\n" +
+                              "• VARIABLE ASSIGNMENT:\n" +
+                              "  5 : FINGERS   |   1..5 : VEC"
                         color: colText
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
                         font.pixelSize: 11
-                        wrapMode: Text.Wrap
+                        lineHeight: 1.15
                         Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+
+                // Tab 1: Vectors, Ranges & Fold (INSERT)
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+                    visible: helpDialog.currentTab === 1
+
+                    Text {
+                        text: "• CLUMPS / VECTORS & RANGES:\n" +
+                              "  1 2 3 4   or   1..10\n\n" +
+                              "• VECTOR ARITHMETIC:\n" +
+                              "  (1 2 3) * 10  ➔  10 20 30\n" +
+                              "  (1 2 3) + (10 20 30)  ➔  11 22 33\n\n" +
+                              "• FOLD REDUCTION (INSERT):\n" +
+                              "  1..100 INSERT +  ➔  5050\n" +
+                              "  1..5 INSERT *  ➔  120 (Factorial)\n" +
+                              "  10 99 42 INSERT MAX  ➔  99"
+                        color: colText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
+                        font.pixelSize: 11
+                        lineHeight: 1.15
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+
+                // Tab 2: Strings, Slicing & Math Operators
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+                    visible: helpDialog.currentTab === 2
+
+                    Text {
+                        text: "• STRING SLICING & 1-BASED INDEX:\n" +
+                              "  \"STRESSED\" [8..1]  ➔  DESSERTS\n" +
+                              "  (10 20 30 40)[2 4]  ➔  20 40\n\n" +
+                              "• ASCII & CHAR CONVERSION:\n" +
+                              "  \"A\" NUMBER  ➔  65   |   65 LETTER  ➔  A\n\n" +
+                              "• MATH MONADS:\n" +
+                              "  SQRT, ABS, FACT, SIN, COS, LOG, LN, TOTHE (^)\n\n" +
+                              "• STATISTICS & PRIMES:\n" +
+                              "  SUM, MEAN, MEDIAN, NORM, 1..30 PRIMES"
+                        color: colText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
+                        font.pixelSize: 11
+                        lineHeight: 1.15
+                        Layout.fillWidth: true
+                        wrapMode: Text.Wrap
+                    }
+                    Item { Layout.fillHeight: true }
+                }
+
+                // Tab 3: Interactive Clickable Samples & Shortcuts
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 8
+                    visible: helpDialog.currentTab === 3
+
+                    Text {
+                        text: "CLICK ANY SAMPLE TO INSERT DIRECTLY INTO INPUT:"
+                        color: colPrompt
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.bold: true
+                        font.pixelSize: 10
                     }
 
-                    // Clumps & Folds
-                    Text {
-                        text: "CLUMPS & FOLD (INSERT)\n" +
-                              "• Sequences / Vectors: 1 2 3 or range 1..10\n" +
-                              "• Vector math: (1 2 3) + (10 20 30) = 11 22 33\n" +
-                              "• Vector fold: 1..100 INSERT + = 5050\n" +
-                              "• Factorial: 1..5 INSERT * = 120\n" +
-                              "• Vector max: 10 99 42 INSERT MAX = 99"
-                        color: colText
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
+                    GridLayout {
+                        columns: 2
+                        columnSpacing: 6
+                        rowSpacing: 6
                         Layout.fillWidth: true
+
+                        Repeater {
+                            model: win.sampleList
+                            delegate: Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 30
+                                color: sampleChipArea.pressed ? colBorder : (sampleChipArea.containsMouse ? Qt.lighter(colTapeBg, 1.1) : colTapeBg)
+                                border.color: colBorder
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData
+                                    color: colText
+                                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                                    font.bold: true
+                                    font.pixelSize: 10
+                                    elide: Text.ElideRight
+                                    width: parent.width - 8
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                MouseArea {
+                                    id: sampleChipArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: win.insertSampleToInput(modelData)
+                                }
+                            }
+                        }
                     }
 
-                    // Strings & Slicing
-                    Text {
-                        text: "STRINGS & 1-BASED INDEXING\n" +
-                              "• String slice: \"STRESSED\" [8..1] = DESSERTS\n" +
-                              "• Array index: (10 20 30 40)[2 4] = 20 40\n" +
-                              "• ASCII code: \"A\" NUMBER = 65\n" +
-                              "• Char code: 65 LETTER = A"
-                        color: colText
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
+                    Item { Layout.fillHeight: true }
 
-                    // Math Monads & Variables
                     Text {
-                        text: "OPERATORS & VARIABLES\n" +
-                              "• Stats: SUM, MEAN, MEDIAN, NORM\n" +
-                              "• Primes: 1..30 PRIMES = 2 3 5 7 11 13 17 19 23 29\n" +
-                              "• Math: SQRT, ABS, FACT, SIN, COS, LOG, LN, MOD, TOTHE (^)\n" +
-                              "• Store var: 5 : FINGERS (FINGERS * 2 = 10)\n" +
-                              "• Settings: 4 : PLACES, 1 : RADIANS, ANS"
-                        color: colText
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
-
-                    // Shortcuts
-                    Text {
-                        text: "KEYBOARD SHORTCUTS\n" +
-                              "• Return / Enter: Evaluate expression\n" +
-                              "• Shift + Return: Explain mode (step trace)\n" +
-                              "• Up / Down: Navigate history\n" +
-                              "• Ctrl + K: Clear the tape\n" +
-                              "• Ctrl + L: Clear input field\n" +
-                              "• F1 / Help button: Open this manual"
+                        text: "SHORTCUTS: Return = Eval | Shift+Return = Trace | Up/Down = Hist"
                         color: colMuted
                         font.family: "Monospace, 'JetBrains Mono', monospace"
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
+                        font.pixelSize: 9
+                        horizontalAlignment: Text.AlignHCenter
                         Layout.fillWidth: true
                     }
                 }
             }
 
-            // Bottom action: Load samples button
-            RowLayout {
+            // Bottom Action: Insert Next Sample Directly into Input Box
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 8
+                Layout.preferredHeight: 36
+                color: insertBtnArea.pressed ? colBorder : (insertBtnArea.containsMouse ? Qt.lighter(colBtnBg, 1.08) : colBtnBg)
+                border.color: colPrompt
+                border.width: 1
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 34
-                    color: colBtnBg
-                    border.color: colPrompt
-                    border.width: 1
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "▶ Insert Sample Calculations to Tape"
-                        color: colPrompt
-                        font.family: "Monospace, 'JetBrains Mono', monospace"
-                        font.bold: true
-                        font.pixelSize: 11
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            win.loadSamplesToTape();
-                            helpDialog.close();
-                        }
-                    }
+                Text {
+                    anchors.centerIn: parent
+                    text: "▶ Insert Sample into Expression Input Box"
+                    color: colPrompt
+                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                    font.bold: true
+                    font.pixelSize: 11
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
                 }
+
+                MouseArea {
+                    id: insertBtnArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: win.insertSampleToInput()
+                }
+
+                ToolTip.visible: insertBtnArea.containsMouse
+                ToolTip.text: "Loads a ready-to-calculate sample expression directly into the input field and focuses it."
             }
         }
     }
