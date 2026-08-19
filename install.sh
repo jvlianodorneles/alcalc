@@ -43,9 +43,8 @@ else
     exit 1
 fi
 
-# Copy binary to ~/.local/bin/alcalc
-cp "${SOURCE_DIR}/alcalc" "${BIN_DIR}/alcalc"
-chmod +x "${BIN_DIR}/alcalc"
+# Copy binary to ~/.local/bin/alcalc safely
+install -Dm755 "${SOURCE_DIR}/alcalc" "${BIN_DIR}/alcalc"
 echo "✓ Installed executable to ${BIN_DIR}/alcalc"
 
 # Copy desktop file

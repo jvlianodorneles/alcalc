@@ -160,6 +160,8 @@ ApplicationWindow {
             helpDialog.close();
         } else if (storedDialog.opened) {
             storedDialog.close();
+        } else if (aboutDialog.opened) {
+            aboutDialog.close();
         } else if (inputField.text.length > 0) {
             inputField.text = "";
         } else {
@@ -173,17 +175,56 @@ ApplicationWindow {
         spacing: 10
 
         // =============================================================
-        // HEADER: PAPER TAPE LABEL (Fixed Height)
+        // HEADER: TITLE & ABOUT ICON BUTTON (Right Side)
         // =============================================================
-        Text {
+        RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: 22
             Layout.fillHeight: false
-            text: "PAPER TAPE"
-            color: colMuted
-            font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
-            font.pixelSize: 11
-            font.bold: true
-            font.letterSpacing: 2
+            spacing: 8
+
+            Text {
+                text: "PAPER TAPE"
+                color: colMuted
+                font.family: "Monospace, 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', monospace"
+                font.pixelSize: 11
+                font.bold: true
+                font.letterSpacing: 2
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            // About Icon Button (Right side of title bar)
+            Rectangle {
+                id: aboutIconBtn
+                Layout.preferredWidth: 22
+                Layout.preferredHeight: 22
+                Layout.alignment: Qt.AlignVCenter
+                color: aboutIconArea.pressed ? colBorder : (aboutIconArea.containsMouse ? Qt.lighter(colBtnBg, 1.1) : "transparent")
+                border.color: aboutIconArea.containsMouse ? colBtnBorder : "transparent"
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "ℹ"
+                    color: aboutIconArea.containsMouse ? colPrompt : colMuted
+                    font.pixelSize: 13
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: aboutIconArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: aboutDialog.open()
+                }
+
+                ToolTip.visible: aboutIconArea.containsMouse
+                ToolTip.text: "About Alcalc"
+            }
         }
 
         // =============================================================
@@ -1101,6 +1142,151 @@ ApplicationWindow {
 
                 ToolTip.visible: insertBtnArea.containsMouse
                 ToolTip.text: "Loads a ready-to-calculate sample expression directly into the input field and focuses it."
+            }
+        }
+    }
+
+    // =============================================================
+    // MODAL ABOUT DIALOG (Paper Tape Monospace Aesthetic)
+    // =============================================================
+    Popup {
+        id: aboutDialog
+        x: 16
+        y: 24
+        width: win.width - 32
+        height: Math.min(win.height - 48, 380)
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        background: Rectangle {
+            color: colTapeBg
+            border.color: colBorder
+            border.width: 2
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 12
+
+            // Header
+            RowLayout {
+                Layout.fillWidth: true
+
+                Text {
+                    text: "🧮 ABOUT ALCALC"
+                    color: colPrompt
+                    font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
+                    font.bold: true
+                    font.pixelSize: 13
+                    Layout.fillWidth: true
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: 26
+                    Layout.preferredHeight: 26
+                    color: "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: colMuted
+                        font.pixelSize: 12
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: aboutDialog.close()
+                    }
+                }
+            }
+
+            // App Info Content
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                color: colBtnBg
+                border.color: colBorder
+                border.width: 1
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 10
+
+                    Text {
+                        text: "ALCALC v1.0.0"
+                        color: colText
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
+                        font.bold: true
+                        font.pixelSize: 14
+                    }
+
+                    Text {
+                        text: "Apple Calculator Language for Linux & Omarchy"
+                        color: colPrompt
+                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+
+                    Text {
+                        text: "An expressive array-oriented calculator engine and interactive paper tape workspace inspired by APL, classic Apple Calculator Language, and modern desktop workflows."
+                        color: colText
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.pixelSize: 11
+                        lineHeight: 1.2
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+
+                    Item { Layout.preferredHeight: 4 }
+
+                    Text {
+                        text: "• Author: Juliano Dorneles\n" +
+                              "• Engine: Apple Calculator Language (ACL) Pure JS / Qt 6 C++\n" +
+                              "• License: MIT License\n" +
+                              "• GitHub: github.com/jvlianodorneles/alcalc"
+                        color: colMuted
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.pixelSize: 10
+                        lineHeight: 1.25
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+
+                    Item { Layout.fillHeight: true }
+                }
+            }
+
+            // Bottom Action: Close Button
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 34
+                color: aboutCloseArea.pressed ? colBorder : (aboutCloseArea.containsMouse ? Qt.lighter(colBtnBg, 1.08) : colBtnBg)
+                border.color: colPrompt
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "OK"
+                    color: colPrompt
+                    font.family: "Monospace, 'JetBrains Mono', monospace"
+                    font.bold: true
+                    font.pixelSize: 11
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: aboutCloseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: aboutDialog.close()
+                }
             }
         }
     }
