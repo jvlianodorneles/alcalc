@@ -81,6 +81,23 @@ except Exception as e:
 "
 fi
 
+# Configure floating window rule in Hyprland if present
+HYPR_CONF="${HOME}/.config/hypr/hyprland.lua"
+if [ -f "${HYPR_CONF}" ]; then
+  python3 -c "
+hypr_path = '${HYPR_CONF}'
+try:
+    with open(hypr_path, 'r') as f:
+        content = f.read()
+    if '\"alcalc\"' not in content:
+        with open(hypr_path, 'a') as f:
+            f.write('\n-- Alcalc floating window rule\no.window(\"alcalc\", { float = true })\n')
+        print('✓ Configured Alcalc floating window rule in Hyprland')
+except Exception as e:
+    pass
+"
+fi
+
 echo ""
 echo "✨ Alcalc installed successfully!"
 echo ""

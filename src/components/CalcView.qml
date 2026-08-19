@@ -130,41 +130,41 @@ Item {
 
         ColumnLayout {
             width: parent.width
-            spacing: 14
+            spacing: 8
 
             // -------------------------------------------------------------
             // SECTION 1: EXPRESSION INPUT BOX
             // -------------------------------------------------------------
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 56
+                Layout.preferredHeight: 46
                 color: backend.themeSurface
-                radius: 8
+                radius: 6
                 border.color: inputField.activeFocus ? backend.themeAccent : backend.themeBorder
                 border.width: inputField.activeFocus ? 2 : 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 8
-                    spacing: 10
+                    anchors.margins: 4
+                    spacing: 6
 
                     Text {
                         text: "❯"
                         color: backend.themeAccent
-                        font.pixelSize: 20
+                        font.pixelSize: 16
                         font.bold: true
-                        Layout.leftMargin: 6
+                        Layout.leftMargin: 4
                     }
 
                     TextField {
                         id: inputField
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        placeholderText: "Type an expression, e.g. 1..10 INSERT + or 6/3+2*5"
+                        placeholderText: "1..10 INSERT + or 6/3+2*5"
                         placeholderTextColor: backend.themeMuted
                         color: backend.themeForeground
-                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
-                        font.pixelSize: 16
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.pixelSize: 14
                         background: null
                         focus: true
 
@@ -207,15 +207,15 @@ Item {
                     // Clear button
                     Button {
                         visible: inputField.text.length > 0
-                        Layout.preferredWidth: 32
-                        Layout.preferredHeight: 32
+                        Layout.preferredWidth: 26
+                        Layout.preferredHeight: 26
                         flat: true
                         contentItem: Text {
                             text: "✕"
                             color: backend.themeMuted
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                            font.pixelSize: 14
+                            font.pixelSize: 12
                         }
                         background: Rectangle {
                             color: parent.hovered ? backend.themeSurfaceVariant : "transparent"
@@ -229,19 +229,19 @@ Item {
 
                     // Eval button
                     Button {
-                        Layout.preferredWidth: 94
-                        Layout.preferredHeight: 40
+                        Layout.preferredWidth: 74
+                        Layout.preferredHeight: 34
                         contentItem: Text {
                             text: "Eval ⏎"
                             color: "#ffffff"
                             font.bold: true
-                            font.pixelSize: 13
+                            font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle {
                             color: parent.down ? Qt.darker(backend.themeAccent, 1.2) : backend.themeAccent
-                            radius: 6
+                            radius: 5
                         }
                         onClicked: root.evaluateNow(false)
                     }
@@ -253,25 +253,25 @@ Item {
             // -------------------------------------------------------------
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: root.isError ? errorLayout.implicitHeight + 24 : 76
+                Layout.preferredHeight: root.isError ? errorLayout.implicitHeight + 16 : 56
                 visible: root.currentResult.length > 0 || root.isError
                 color: root.isError ? (backend.darkMode ? "#3a1d25" : "#fde8e8") : backend.themeSurfaceVariant
-                radius: 8
+                radius: 6
                 border.color: root.isError ? backend.themeError : backend.themeBorder
                 border.width: 1
 
                 // Result display
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 14
+                    anchors.margins: 10
                     visible: !root.isError
-                    spacing: 12
+                    spacing: 8
 
                     Text {
                         text: "= " + root.currentResult
                         color: backend.themeForeground
-                        font.family: "Monospace, 'JetBrains Mono', 'Fira Code', monospace"
-                        font.pixelSize: 22
+                        font.family: "Monospace, 'JetBrains Mono', monospace"
+                        font.pixelSize: 18
                         font.bold: true
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -279,40 +279,40 @@ Item {
 
                     // Copy button
                     Button {
-                        Layout.preferredHeight: 38
-                        Layout.preferredWidth: root.lastCopiedText.length > 0 ? 98 : 88
+                        Layout.preferredHeight: 32
+                        Layout.preferredWidth: root.lastCopiedText.length > 0 ? 82 : 72
                         contentItem: Text {
                             text: root.lastCopiedText.length > 0 ? "✓ Copied" : "󰆏 Copy"
                             color: root.lastCopiedText.length > 0 ? backend.themeSuccess : backend.themeForeground
                             font.bold: true
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle {
                             color: backend.themeSurface
                             border.color: backend.themeBorder
-                            radius: 6
+                            radius: 5
                         }
                         onClicked: root.copyResult()
                     }
 
                     // Explain toggle button
                     Button {
-                        Layout.preferredHeight: 38
-                        Layout.preferredWidth: 92
+                        Layout.preferredHeight: 32
+                        Layout.preferredWidth: 76
                         contentItem: Text {
                             text: root.explainVisible ? "🔍 Hide" : "🔍 Explain"
                             color: backend.themeAccent
                             font.bold: true
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle {
                             color: backend.themeSurface
                             border.color: backend.themeBorder
-                            radius: 6
+                            radius: 5
                         }
                         onClicked: {
                             if (!root.explainVisible) {
@@ -328,9 +328,9 @@ Item {
                 ColumnLayout {
                     id: errorLayout
                     anchors.fill: parent
-                    anchors.margins: 12
+                    anchors.margins: 10
                     visible: root.isError
-                    spacing: 8
+                    spacing: 6
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -338,7 +338,7 @@ Item {
                             text: "⚠️ " + root.errorText
                             color: backend.themeError
                             font.bold: true
-                            font.pixelSize: 14
+                            font.pixelSize: 13
                             wrapMode: Text.Wrap
                             Layout.fillWidth: true
                         }
@@ -348,39 +348,39 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         visible: root.smartTipObj !== null
-                        spacing: 8
+                        spacing: 6
 
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: tipText.implicitHeight + 16
+                            Layout.preferredHeight: tipText.implicitHeight + 12
                             color: backend.darkMode ? "#2b2230" : "#fff8e6"
-                            radius: 6
+                            radius: 5
                             border.color: "#d97706"
                             border.width: 1
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.margins: 8
-                                spacing: 8
+                                anchors.margins: 6
+                                spacing: 6
 
                                 Text {
                                     id: tipText
                                     text: "💡 " + (root.smartTipObj ? root.smartTipObj.tip : "")
                                     color: backend.darkMode ? "#fcd34d" : "#b45309"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     wrapMode: Text.Wrap
                                     Layout.fillWidth: true
                                 }
 
                                 Button {
                                     visible: root.smartTipObj && root.smartTipObj.suggestedFix !== null
-                                    Layout.preferredHeight: 32
-                                    Layout.preferredWidth: 86
+                                    Layout.preferredHeight: 28
+                                    Layout.preferredWidth: 76
                                     contentItem: Text {
                                         text: "Auto-Fix"
                                         color: "#ffffff"
                                         font.bold: true
-                                        font.pixelSize: 12
+                                        font.pixelSize: 11
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
@@ -401,65 +401,65 @@ Item {
             // -------------------------------------------------------------
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: explainColumn.implicitHeight + 20
+                Layout.preferredHeight: explainColumn.implicitHeight + 16
                 visible: root.explainVisible && root.explainSteps.length > 0
                 color: backend.themeSurface
-                radius: 8
+                radius: 6
                 border.color: backend.themeAccent
                 border.width: 1
 
                 ColumnLayout {
                     id: explainColumn
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
+                    anchors.margins: 8
+                    spacing: 6
 
                     Text {
                         text: "🔍 Step-by-Step Reduction Trace:"
                         color: backend.themeAccent
                         font.bold: true
-                        font.pixelSize: 14
+                        font.pixelSize: 12
                     }
 
                     Repeater {
                         model: root.explainSteps
                         delegate: Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 32
+                            Layout.preferredHeight: 28
                             color: index % 2 === 0 ? backend.themeSurfaceVariant : "transparent"
                             radius: 4
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 8
+                                anchors.margins: 4
+                                spacing: 6
 
                                 Text {
                                     text: (index + 1) + "."
                                     color: backend.themeMuted
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     font.bold: true
-                                    Layout.preferredWidth: 22
+                                    Layout.preferredWidth: 18
                                 }
                                 Text {
                                     text: modelData.expr
                                     color: backend.themeForeground
                                     font.family: "Monospace"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
                                 }
                                 Text {
                                     text: "➔"
                                     color: backend.themeMuted
-                                    font.pixelSize: 13
+                                    font.pixelSize: 11
                                 }
                                 Text {
                                     text: modelData.result
                                     color: backend.themeAccent
                                     font.family: "Monospace"
                                     font.bold: true
-                                    font.pixelSize: 14
+                                    font.pixelSize: 12
                                 }
                             }
                         }
@@ -472,29 +472,29 @@ Item {
             // -------------------------------------------------------------
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: keypadColumn.implicitHeight + 20
+                Layout.preferredHeight: keypadColumn.implicitHeight + 14
                 color: backend.themeSurface
-                radius: 8
+                radius: 6
                 border.color: backend.themeBorder
                 border.width: 1
 
                 ColumnLayout {
                     id: keypadColumn
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
+                    anchors.margins: 8
+                    spacing: 6
 
                     TabBar {
                         id: keypadTabBar
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 36
+                        Layout.preferredHeight: 28
                         background: Rectangle { color: "transparent" }
 
-                        TabButton { text: "Arithmetic"; font.pixelSize: 12 }
-                        TabButton { text: "Clumps & Range"; font.pixelSize: 12 }
-                        TabButton { text: "Monads / Stats"; font.pixelSize: 12 }
-                        TabButton { text: "Strings & Base"; font.pixelSize: 12 }
-                        TabButton { text: "Constants & Vars"; font.pixelSize: 12 }
+                        TabButton { text: "Arithmetic"; font.pixelSize: 10; padding: 2 }
+                        TabButton { text: "Clumps"; font.pixelSize: 10; padding: 2 }
+                        TabButton { text: "Monads"; font.pixelSize: 10; padding: 2 }
+                        TabButton { text: "Strings"; font.pixelSize: 10; padding: 2 }
+                        TabButton { text: "Vars/Const"; font.pixelSize: 10; padding: 2 }
                     }
 
                     StackLayout {
@@ -502,11 +502,11 @@ Item {
                         Layout.fillWidth: true
                         currentIndex: keypadTabBar.currentIndex
 
-                        // Page 0: Arithmetic (4 columns, roomy)
+                        // Page 0: Arithmetic (4 columns)
                         GridLayout {
                             columns: 4
-                            rowSpacing: 8
-                            columnSpacing: 8
+                            rowSpacing: 5
+                            columnSpacing: 5
 
                             Repeater {
                                 model: [
@@ -514,32 +514,32 @@ Item {
                                     { label: "-", token: " - ", tip: "Subtraction" },
                                     { label: "*", token: " * ", tip: "Multiplication" },
                                     { label: "/", token: " / ", tip: "Division" },
-                                    { label: "^ TOTHE", token: " TOTHE ", tip: "Raise to power (e.g. 2 TOTHE 8 = 256)" },
-                                    { label: "MOD", token: " MOD ", tip: "Modulo remainder (e.g. 17 MOD 5 = 2)" },
-                                    { label: "± neg (_)", token: "_", tip: "Negative number prefix (e.g. _5)" },
-                                    { label: "√ SQRT", token: " SQRT", tip: "Square root" },
+                                    { label: "TOTHE", token: " TOTHE ", tip: "Raise to power (e.g. 2 TOTHE 8 = 256)" },
+                                    { label: "MOD", token: " MOD ", tip: "Modulo remainder" },
+                                    { label: "_ neg", token: "_", tip: "Negative number prefix (e.g. _5)" },
+                                    { label: "SQRT", token: " SQRT", tip: "Square root" },
                                     { label: "(", token: "(", tip: "Open parenthesis" },
                                     { label: ")", token: ")", tip: "Close parenthesis" },
-                                    { label: "MIN", token: " MIN ", tip: "Minimum of two values/vectors" },
-                                    { label: "MAX", token: " MAX ", tip: "Maximum of two values/vectors" },
+                                    { label: "MIN", token: " MIN ", tip: "Minimum of values" },
+                                    { label: "MAX", token: " MAX ", tip: "Maximum of values" },
                                 ]
                                 delegate: Button {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 42
+                                    Layout.preferredHeight: 36
                                     ToolTip.visible: hovered
                                     ToolTip.text: modelData.tip
                                     contentItem: Text {
                                         text: modelData.label
                                         color: backend.themeForeground
                                         font.bold: true
-                                        font.pixelSize: 13
+                                        font.pixelSize: 12
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
                                     background: Rectangle {
                                         color: parent.down ? backend.themeAccent : (parent.hovered ? backend.themeSurfaceVariant : backend.themeBackground)
                                         border.color: backend.themeBorder
-                                        radius: 6
+                                        radius: 4
                                     }
                                     onClicked: root.insertToken(modelData.token)
                                 }
@@ -549,16 +549,16 @@ Item {
                         // Page 1: Clumps & Range (4 columns)
                         GridLayout {
                             columns: 4
-                            rowSpacing: 8
-                            columnSpacing: 8
+                            rowSpacing: 5
+                            columnSpacing: 5
 
                             Repeater {
                                 model: [
-                                    { label: ".. (Range)", token: "..", tip: "Generate sequence range (e.g. 1..10)" },
+                                    { label: ".. Range", token: "..", tip: "Generate sequence range (e.g. 1..10)" },
                                     { label: "INSERT +", token: " INSERT +", tip: "Sum fold reduction across vector" },
                                     { label: "INSERT *", token: " INSERT *", tip: "Product fold reduction across vector" },
                                     { label: "INSERT MAX", token: " INSERT MAX", tip: "Maximum fold reduction" },
-                                    { label: "[ ] (Index)", token: "[]", tip: "1-based vector and string indexing" },
+                                    { label: "[ ] Index", token: "[]", tip: "1-based vector and string indexing" },
                                     { label: "SORT", token: " SORT", tip: "Sort vector elements ascending" },
                                     { label: "REVERSE", token: " REVERSE", tip: "Reverse vector or string" },
                                     { label: "DOT", token: " DOT ", tip: "Vector dot product" },
@@ -569,21 +569,21 @@ Item {
                                 ]
                                 delegate: Button {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 42
+                                    Layout.preferredHeight: 36
                                     ToolTip.visible: hovered
                                     ToolTip.text: modelData.tip
                                     contentItem: Text {
                                         text: modelData.label
                                         color: backend.themeForeground
                                         font.bold: true
-                                        font.pixelSize: 13
+                                        font.pixelSize: 11
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
                                     background: Rectangle {
                                         color: parent.down ? backend.themeAccent : (parent.hovered ? backend.themeSurfaceVariant : backend.themeBackground)
                                         border.color: backend.themeBorder
-                                        radius: 6
+                                        radius: 4
                                     }
                                     onClicked: root.insertToken(modelData.token)
                                 }
@@ -593,41 +593,41 @@ Item {
                         // Page 2: Monads / Stats (4 columns)
                         GridLayout {
                             columns: 4
-                            rowSpacing: 8
-                            columnSpacing: 8
+                            rowSpacing: 5
+                            columnSpacing: 5
 
                             Repeater {
                                 model: [
                                     { label: "SUM", token: " SUM", tip: "Sum all elements in vector" },
-                                    { label: "MEAN (Avg)", token: " MEAN", tip: "Arithmetic mean / average" },
+                                    { label: "MEAN", token: " MEAN", tip: "Arithmetic mean / average" },
                                     { label: "MEDIAN", token: " MEDIAN", tip: "Median value of vector" },
-                                    { label: "NORM (Mag)", token: " NORM", tip: "Euclidean norm / vector magnitude" },
+                                    { label: "NORM", token: " NORM", tip: "Euclidean norm / vector magnitude" },
                                     { label: "PRIMES", token: " PRIMES", tip: "Filter prime numbers from vector" },
                                     { label: "PRIME", token: " PRIME", tip: "Primality test (1 if prime, 0 otherwise)" },
                                     { label: "GCD", token: " GCD", tip: "Greatest common divisor" },
                                     { label: "LCM", token: " LCM", tip: "Least common multiple" },
-                                    { label: "FACT (n!)", token: " FACT", tip: "Factorial function" },
+                                    { label: "FACT", token: " FACT", tip: "Factorial function" },
                                     { label: "SIN", token: " SIN", tip: "Sine function" },
                                     { label: "COS", token: " COS", tip: "Cosine function" },
                                     { label: "LOG", token: " LOG", tip: "Base-10 logarithm" },
                                 ]
                                 delegate: Button {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 42
+                                    Layout.preferredHeight: 36
                                     ToolTip.visible: hovered
                                     ToolTip.text: modelData.tip
                                     contentItem: Text {
                                         text: modelData.label
                                         color: backend.themeForeground
                                         font.bold: true
-                                        font.pixelSize: 13
+                                        font.pixelSize: 11
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
                                     background: Rectangle {
                                         color: parent.down ? backend.themeAccent : (parent.hovered ? backend.themeSurfaceVariant : backend.themeBackground)
                                         border.color: backend.themeBorder
-                                        radius: 6
+                                        radius: 4
                                     }
                                     onClicked: root.insertToken(modelData.token)
                                 }
@@ -637,41 +637,41 @@ Item {
                         // Page 3: Strings & Base (4 columns)
                         GridLayout {
                             columns: 4
-                            rowSpacing: 8
-                            columnSpacing: 8
+                            rowSpacing: 5
+                            columnSpacing: 5
 
                             Repeater {
                                 model: [
                                     { label: "LENGTH", token: " LENGTH", tip: "Length of string or vector" },
                                     { label: "VALUE", token: " VALUE", tip: "Parse number from string" },
-                                    { label: "NUMBER", token: " NUMBER", tip: "Convert character to ASCII/Unicode code point" },
+                                    { label: "NUMBER", token: " NUMBER", tip: "Convert character to code point" },
                                     { label: "LETTER", token: " LETTER", tip: "Convert code point to character" },
-                                    { label: "HEX", token: " HEX", tip: "Convert decimal to hexadecimal string" },
-                                    { label: "FROMHEX", token: " FROMHEX", tip: "Parse hexadecimal string to decimal" },
-                                    { label: "BIN", token: " BIN", tip: "Convert decimal to binary string" },
-                                    { label: "FROMBIN", token: " FROMBIN", tip: "Parse binary string to decimal" },
-                                    { label: "OCT", token: " OCT", tip: "Convert decimal to octal string" },
-                                    { label: "FROMOCT", token: " FROMOCT", tip: "Parse octal string to decimal" },
+                                    { label: "HEX", token: " HEX", tip: "Convert decimal to hexadecimal" },
+                                    { label: "FROMHEX", token: " FROMHEX", tip: "Parse hexadecimal to decimal" },
+                                    { label: "BIN", token: " BIN", tip: "Convert decimal to binary" },
+                                    { label: "FROMBIN", token: " FROMBIN", tip: "Parse binary to decimal" },
+                                    { label: "OCT", token: " OCT", tip: "Convert decimal to octal" },
+                                    { label: "FROMOCT", token: " FROMOCT", tip: "Parse octal to decimal" },
                                     { label: "STRING", token: " STRING", tip: "Convert number to string" },
-                                    { label: "PICK", token: " PICK", tip: "Randomly pick one element from vector" },
+                                    { label: "PICK", token: " PICK", tip: "Randomly pick one element" },
                                 ]
                                 delegate: Button {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 42
+                                    Layout.preferredHeight: 36
                                     ToolTip.visible: hovered
                                     ToolTip.text: modelData.tip
                                     contentItem: Text {
                                         text: modelData.label
                                         color: backend.themeForeground
                                         font.bold: true
-                                        font.pixelSize: 13
+                                        font.pixelSize: 11
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
                                     background: Rectangle {
                                         color: parent.down ? backend.themeAccent : (parent.hovered ? backend.themeSurfaceVariant : backend.themeBackground)
                                         border.color: backend.themeBorder
-                                        radius: 6
+                                        radius: 4
                                     }
                                     onClicked: root.insertToken(modelData.token)
                                 }
@@ -681,15 +681,15 @@ Item {
                         // Page 4: Constants & Vars (4 columns)
                         GridLayout {
                             columns: 4
-                            rowSpacing: 8
-                            columnSpacing: 8
+                            rowSpacing: 5
+                            columnSpacing: 5
 
                             Repeater {
                                 model: [
                                     { label: "ANS", token: "ANS", tip: "Previous evaluated answer" },
                                     { label: "PI", token: "PI", tip: "Pi constant (3.14159...)" },
                                     { label: "E", token: "E", tip: "Euler's constant e (2.71828...)" },
-                                    { label: ": (Assign)", token: " : ", tip: "Assign value to variable (e.g. 5 : fingers)" },
+                                    { label: ": Assign", token: " : ", tip: "Assign value to variable (e.g. 5 : fingers)" },
                                     { label: "PLACES", token: "PLACES", tip: "Decimal precision (e.g. 4 : PLACES)" },
                                     { label: "RADIANS", token: "RADIANS", tip: "Angle mode (1 = Rad, 0 = Deg)" },
                                     { label: "{ Comment }", token: "{  }", tip: "Enclose comment in braces" },
@@ -701,21 +701,21 @@ Item {
                                 ]
                                 delegate: Button {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 42
+                                    Layout.preferredHeight: 36
                                     ToolTip.visible: hovered
                                     ToolTip.text: modelData.tip
                                     contentItem: Text {
                                         text: modelData.label
                                         color: backend.themeForeground
                                         font.bold: true
-                                        font.pixelSize: 13
+                                        font.pixelSize: 11
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                     }
                                     background: Rectangle {
                                         color: parent.down ? backend.themeAccent : (parent.hovered ? backend.themeSurfaceVariant : backend.themeBackground)
                                         border.color: backend.themeBorder
-                                        radius: 6
+                                        radius: 4
                                     }
                                     onClicked: root.insertToken(modelData.token)
                                 }

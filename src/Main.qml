@@ -7,12 +7,12 @@ import "components"
 
 ApplicationWindow {
     id: win
-    width: 580
-    height: 720
-    minimumWidth: 460
-    minimumHeight: 520
+    width: 400
+    height: 570
+    minimumWidth: 350
+    minimumHeight: 450
     visible: true
-    title: "Alcalc - Apple Calculator Language"
+    title: "Alcalc"
 
     readonly property bool darkMode: backend.darkMode
     readonly property real textScale: backend.textScale
@@ -39,51 +39,46 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 14
-        spacing: 12
+        anchors.margins: 10
+        spacing: 8
 
         // =============================================================
         // HEADER BAR: TITLE + MODE PILLS
         // =============================================================
         RowLayout {
             Layout.fillWidth: true
-            spacing: 10
+            spacing: 6
 
             Text {
                 text: "🧮"
-                font.pixelSize: 22
+                font.pixelSize: 18
             }
 
             Text {
                 text: "Alcalc"
                 color: backend.themeForeground
                 font.bold: true
-                font.pixelSize: 19
+                font.pixelSize: 16
             }
 
-            Text {
-                text: "• Apple Calculator"
-                color: backend.themeMuted
-                font.pixelSize: 13
-                Layout.fillWidth: true
-            }
+            Item { Layout.fillWidth: true }
 
             // Radians / Degrees Toggle Pill
             Button {
-                Layout.preferredHeight: 34
-                Layout.preferredWidth: 74
+                Layout.preferredHeight: 28
+                Layout.preferredWidth: 54
                 contentItem: Text {
                     text: backend.radians ? "RAD" : "DEG"
                     color: backend.themeAccent
                     font.bold: true
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
                     color: backend.themeSurface
                     border.color: backend.themeBorder
-                    radius: 17
+                    radius: 14
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Angle mode: " + (backend.radians ? "Radians (Click for Degrees)" : "Degrees (Click for Radians)")
@@ -92,20 +87,20 @@ ApplicationWindow {
 
             // Decimal Places Stepper Pill
             Button {
-                Layout.preferredHeight: 34
-                Layout.preferredWidth: 96
+                Layout.preferredHeight: 28
+                Layout.preferredWidth: 62
                 contentItem: Text {
-                    text: "Places: " + backend.places
+                    text: "P: " + backend.places
                     color: backend.themeForeground
                     font.bold: true
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
                     color: backend.themeSurface
                     border.color: backend.themeBorder
-                    radius: 17
+                    radius: 14
                 }
                 ToolTip.visible: hovered
                 ToolTip.text: "Decimal precision: " + backend.places + " (Click to cycle 2, 4, 6, 8, 0)"
@@ -117,42 +112,57 @@ ApplicationWindow {
         }
 
         // =============================================================
-        // MAIN NAVIGATION TABS
+        // MAIN NAVIGATION TABS (5 compact tabs fitting neatly in 380px)
         // =============================================================
         TabBar {
             id: mainTabBar
             Layout.fillWidth: true
-            Layout.preferredHeight: 44
+            Layout.preferredHeight: 34
             background: Rectangle {
                 color: backend.themeSurface
-                radius: 8
+                radius: 6
                 border.color: backend.themeBorder
             }
 
             TabButton {
                 text: "🧮 Calc"
                 font.bold: mainTabBar.currentIndex === 0
-                font.pixelSize: 13
+                font.pixelSize: 11
+                padding: 2
+                ToolTip.visible: hovered
+                ToolTip.text: "Calculator REPL & Keypad"
             }
             TabButton {
-                text: "📜 Tape" + (backend.historyList.length > 0 ? " (" + backend.historyList.length + ")" : "")
+                text: "📜 Tape"
                 font.bold: mainTabBar.currentIndex === 1
-                font.pixelSize: 13
+                font.pixelSize: 11
+                padding: 2
+                ToolTip.visible: hovered
+                ToolTip.text: "History Tape" + (backend.historyList.length > 0 ? " (" + backend.historyList.length + " entries)" : "")
             }
             TabButton {
-                text: "📚 Formulas"
+                text: "📚 Lib"
                 font.bold: mainTabBar.currentIndex === 2
-                font.pixelSize: 13
+                font.pixelSize: 11
+                padding: 2
+                ToolTip.visible: hovered
+                ToolTip.text: "Formulas & Samples Library"
             }
             TabButton {
-                text: "🧩 Macros"
+                text: "🧩 Vars"
                 font.bold: mainTabBar.currentIndex === 3
-                font.pixelSize: 13
+                font.pixelSize: 11
+                padding: 2
+                ToolTip.visible: hovered
+                ToolTip.text: "Variables & Custom Macros"
             }
             TabButton {
                 text: "❓ Help"
                 font.bold: mainTabBar.currentIndex === 4
-                font.pixelSize: 13
+                font.pixelSize: 11
+                padding: 2
+                ToolTip.visible: hovered
+                ToolTip.text: "Syntax Cheatsheet & Manual"
             }
         }
 
