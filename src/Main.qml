@@ -416,14 +416,14 @@ ApplicationWindow {
         }
 
         // =============================================================
-        // BOTTOM BUTTONS & STATUS BAR (Full Height with Zero Insets: 52px & 48px)
+        // BOTTOM BUTTONS & STATUS BAR (Perfect H & V Center Alignment: 52px & 48px)
         // =============================================================
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: false
             spacing: 6
 
-            // Row 1: PLACES, RADIANS, STORED, CLEAR THE TAPE (Height: 52px)
+            // Row 1: PLACES, RADIANS, STORED, CLEAR TAPE (Height: 52px)
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 52
@@ -432,13 +432,16 @@ ApplicationWindow {
                 Layout.fillHeight: false
                 spacing: 6
 
-                // PLACES button
-                Button {
+                // PLACES Button
+                Rectangle {
                     Layout.preferredHeight: 52
                     Layout.preferredWidth: 84
                     Layout.fillHeight: false
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Row {
+                    color: placesArea.pressed ? colBorder : (placesArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colBtnBorder
+                    border.width: 1
+
+                    Row {
                         anchors.centerIn: parent
                         spacing: 5
                         Text {
@@ -458,26 +461,32 @@ ApplicationWindow {
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colBtnBorder
-                        border.width: 1
+
+                    MouseArea {
+                        id: placesArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            var nextP = (backend.places === 2) ? 4 : (backend.places === 4) ? 6 : (backend.places === 6) ? 8 : (backend.places === 8) ? 0 : 2;
+                            backend.setPlaces(nextP);
+                        }
                     }
-                    ToolTip.visible: hovered
+
+                    ToolTip.visible: placesArea.containsMouse
                     ToolTip.text: "Click to cycle decimal places (2, 4, 6, 8, 0)"
-                    onClicked: {
-                        var nextP = (backend.places === 2) ? 4 : (backend.places === 4) ? 6 : (backend.places === 6) ? 8 : (backend.places === 8) ? 0 : 2;
-                        backend.setPlaces(nextP);
-                    }
                 }
 
-                // RADIANS button
-                Button {
+                // RADIANS Button
+                Rectangle {
                     Layout.preferredHeight: 52
                     Layout.preferredWidth: 92
                     Layout.fillHeight: false
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Row {
+                    color: radiansArea.pressed ? colBorder : (radiansArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colBtnBorder
+                    border.width: 1
+
+                    Row {
                         anchors.centerIn: parent
                         spacing: 5
                         Text {
@@ -497,23 +506,29 @@ ApplicationWindow {
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colBtnBorder
-                        border.width: 1
+
+                    MouseArea {
+                        id: radiansArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: backend.setRadians(backend.radians ? 0 : 1)
                     }
-                    ToolTip.visible: hovered
+
+                    ToolTip.visible: radiansArea.containsMouse
                     ToolTip.text: "Click to toggle angle mode (1 = Radians, 0 = Degrees)"
-                    onClicked: backend.setRadians(backend.radians ? 0 : 1)
                 }
 
-                // STORED button
-                Button {
+                // STORED Button
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 52
                     Layout.fillHeight: false
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Row {
+                    color: storedArea.pressed ? colBorder : (storedArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colBtnBorder
+                    border.width: 1
+
+                    Row {
                         anchors.centerIn: parent
                         spacing: 5
                         width: Math.min(parent.width - 10, implicitWidth)
@@ -536,24 +551,30 @@ ApplicationWindow {
                             verticalAlignment: Text.AlignVCenter
                         }
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colBtnBorder
-                        border.width: 1
+
+                    MouseArea {
+                        id: storedArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
                     }
-                    ToolTip.visible: hovered
+
+                    ToolTip.visible: storedArea.containsMouse
                     ToolTip.text: "Active variables in memory: " + win.getStoredVarsText()
                 }
 
-                // CLEAR THE TAPE button
-                Button {
+                // CLEAR TAPE Button (Changed to CLEAR TAPE)
+                Rectangle {
                     Layout.preferredHeight: 52
-                    Layout.preferredWidth: 124
+                    Layout.preferredWidth: 110
                     Layout.fillHeight: false
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Text {
+                    color: clearTapeArea.pressed ? colBorder : (clearTapeArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colBtnBorder
+                    border.width: 1
+
+                    Text {
                         anchors.centerIn: parent
-                        text: "CLEAR THE TAPE"
+                        text: "CLEAR TAPE"
                         color: colMuted
                         font.family: "Monospace, 'JetBrains Mono', monospace"
                         font.bold: true
@@ -561,18 +582,21 @@ ApplicationWindow {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colBtnBorder
-                        border.width: 1
+
+                    MouseArea {
+                        id: clearTapeArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: backend.clearHistory()
                     }
-                    ToolTip.visible: hovered
+
+                    ToolTip.visible: clearTapeArea.containsMouse
                     ToolTip.text: "Clear calculation tape history (Ctrl+K)"
-                    onClicked: backend.clearHistory()
                 }
             }
 
-            // Row 2: FORGET EVERY NAME & HELP (Height: 48px)
+            // Row 2: FORGET EVERY NAME & HELP ? (Height: 48px)
             RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 48
@@ -581,12 +605,16 @@ ApplicationWindow {
                 Layout.fillHeight: false
                 spacing: 6
 
-                Button {
+                // FORGET EVERY NAME Button
+                Rectangle {
                     Layout.preferredHeight: 48
-                    Layout.preferredWidth: 150
+                    Layout.preferredWidth: 156
                     Layout.fillHeight: false
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Text {
+                    color: forgetArea.pressed ? colBorder : (forgetArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colBtnBorder
+                    border.width: 1
+
+                    Text {
                         anchors.centerIn: parent
                         text: "FORGET EVERY NAME"
                         color: colMuted
@@ -596,23 +624,29 @@ ApplicationWindow {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colBtnBorder
-                        border.width: 1
+
+                    MouseArea {
+                        id: forgetArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: backend.clearVars()
                     }
-                    ToolTip.visible: hovered
+
+                    ToolTip.visible: forgetArea.containsMouse
                     ToolTip.text: "Erase all custom stored variables from memory"
-                    onClicked: backend.clearVars()
                 }
 
-                // HELP Button
-                Button {
+                // HELP ? Button
+                Rectangle {
                     Layout.preferredHeight: 48
                     Layout.preferredWidth: 80
                     Layout.fillHeight: false
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Text {
+                    color: helpBtnArea.pressed ? colBorder : (helpBtnArea.containsMouse ? Qt.lighter(colBtnBg, 1.05) : colBtnBg)
+                    border.color: colPrompt
+                    border.width: 1
+
+                    Text {
                         anchors.centerIn: parent
                         text: "HELP ?"
                         color: colPrompt
@@ -622,14 +656,17 @@ ApplicationWindow {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colPrompt
-                        border.width: 1
+
+                    MouseArea {
+                        id: helpBtnArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: helpDialog.open()
                     }
-                    ToolTip.visible: hovered
+
+                    ToolTip.visible: helpBtnArea.containsMouse
                     ToolTip.text: "Open Apple Calculator reference manual (F1)"
-                    onClicked: helpDialog.open()
                 }
 
                 Item { Layout.fillWidth: true }
@@ -674,18 +711,23 @@ ApplicationWindow {
                     Layout.fillWidth: true
                 }
 
-                Button {
+                Rectangle {
                     Layout.preferredWidth: 26
                     Layout.preferredHeight: 26
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Text {
+                    color: "transparent"
+
+                    Text {
                         anchors.centerIn: parent
                         text: "✕"
                         color: colMuted
                         font.pixelSize: 12
                     }
-                    background: Rectangle { color: "transparent" }
-                    onClicked: helpDialog.close()
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: helpDialog.close()
+                    }
                 }
             }
 
@@ -780,11 +822,14 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 spacing: 8
 
-                Button {
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 34
-                    topInset: 0; bottomInset: 0; leftInset: 0; rightInset: 0; padding: 0
-                    contentItem: Text {
+                    color: colBtnBg
+                    border.color: colPrompt
+                    border.width: 1
+
+                    Text {
                         anchors.centerIn: parent
                         text: "▶ Insert Sample Calculations to Tape"
                         color: colPrompt
@@ -794,14 +839,14 @@ ApplicationWindow {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    background: Rectangle {
-                        color: parent.down ? colBorder : colBtnBg
-                        border.color: colPrompt
-                        border.width: 1
-                    }
-                    onClicked: {
-                        win.loadSamplesToTape();
-                        helpDialog.close();
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            win.loadSamplesToTape();
+                            helpDialog.close();
+                        }
                     }
                 }
             }
