@@ -8,12 +8,14 @@
 
 class QWindow;
 class QJSEngine;
+class QFileSystemWatcher;
 
 class Backend : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(bool darkMode READ darkMode WRITE setDarkMode NOTIFY darkModeChanged)
     Q_PROPERTY(qreal textScale READ textScale WRITE setTextScale NOTIFY textScaleChanged)
+    Q_PROPERTY(bool popupMode READ popupMode WRITE setPopupMode NOTIFY popupModeChanged)
     Q_PROPERTY(QColor themeBackground READ themeBackground NOTIFY themeColorsChanged)
     Q_PROPERTY(QColor themeForeground READ themeForeground NOTIFY themeColorsChanged)
     Q_PROPERTY(QColor themeSurface READ themeSurface NOTIFY themeColorsChanged)
@@ -40,6 +42,9 @@ public:
 
     qreal textScale() const { return m_textScale; }
     void setTextScale(qreal textScale);
+
+    bool popupMode() const { return m_popupMode; }
+    void setPopupMode(bool popupMode);
 
     QColor themeBackground() const;
     QColor themeForeground() const;
@@ -85,6 +90,7 @@ public:
 signals:
     void darkModeChanged(bool darkMode);
     void textScaleChanged(qreal textScale);
+    void popupModeChanged(bool popupMode);
     void themeColorsChanged();
     void historyChanged();
     void varsChanged();
@@ -93,10 +99,13 @@ signals:
 
 private:
     void initEngine();
+    void setupStateWatcher();
     QString stateFilePath(const QString &filename) const;
 
     bool m_darkMode = true;
     qreal m_textScale = 1.0;
+    bool m_popupMode = false;
+    bool m_isSavingState = false;
     int m_places = 4;
     int m_radians = 1;
 
@@ -106,4 +115,5 @@ private:
 
     QWindow *m_parentWindow = nullptr;
     QJSEngine *m_jsEngine = nullptr;
+    QFileSystemWatcher *m_fileWatcher = nullptr;
 };

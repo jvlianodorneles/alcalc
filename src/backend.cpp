@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QGuiApplication>
 #include <QJSEngine>
 #include <QJSValue>
@@ -17,6 +18,7 @@
 
 Backend::Backend(QObject *parent) : QObject(parent) {
     loadState();
+    setupStateWatcher();
 }
 
 Backend::~Backend() {
@@ -39,6 +41,14 @@ void Backend::setTextScale(qreal textScale) {
 
     m_textScale = textScale;
     emit textScaleChanged(m_textScale);
+}
+
+void Backend::setPopupMode(bool popupMode) {
+    if (m_popupMode == popupMode)
+        return;
+
+    m_popupMode = popupMode;
+    emit popupModeChanged(m_popupMode);
 }
 
 QColor Backend::themeBackground() const {
@@ -98,6 +108,42 @@ QString Backend::stateFilePath(const QString &filename) const {
     return stateDirectoryPath() + QStringLiteral("/") + filename;
 }
 
+void Backend::setupStateWatcher() {
+    if (m_fileWatcher)
+        return;
+
+    m_fileWatcher = new QFileSystemWatcher(this);
+    const QString dirPath = stateDirectoryPath();
+    QDir().mkpath(dirPath);
+
+    m_fileWatcher->addPath(dirPath);
+
+    const QStringList files = {
+        stateFilePath(QStringLiteral("history.json")),
+        stateFilePath(QStringLiteral("vars.json")),
+        stateFilePath(QStringLiteral("macros.json")),
+        stateFilePath(QStringLiteral("settings.json"))
+    };
+
+    for (const QString &file : files) {
+        if (QFile::exists(file)) {
+            m_fileWatcher->addPath(file);
+        }
+    }
+
+    auto onModified = [this](const QString &path) {
+        if (m_isSavingState)
+            return;
+        loadState();
+        if (m_fileWatcher && QFile::exists(path) && !m_fileWatcher->files().contains(path)) {
+            m_fileWatcher->addPath(path);
+        }
+    };
+
+    connect(m_fileWatcher, &QFileSystemWatcher::fileChanged, this, onModified);
+    connect(m_fileWatcher, &QFileSystemWatcher::directoryChanged, this, onModified);
+}
+
 void Backend::loadState() {
     const QString dirPath = stateDirectoryPath();
     QDir().mkpath(dirPath);
@@ -148,39 +194,59 @@ void Backend::loadState() {
 }
 
 void Backend::saveState() {
+    m_isSavingState = true;
     const QString dirPath = stateDirectoryPath();
     QDir().mkpath(dirPath);
 
     // 1. History
-    QFile histFile(stateFilePath(QStringLiteral("history.json")));
+    const QString histPath = stateFilePath(QStringLiteral("history.json"));
+    QFile histFile(histPath);
     if (histFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         const QJsonDocument doc(QJsonArray::fromVariantList(m_history));
         histFile.write(doc.toJson(QJsonDocument::Indented));
+        histFile.close();
     }
 
     // 2. Variables
-    QFile varsFile(stateFilePath(QStringLiteral("vars.json")));
+    const QString varsPath = stateFilePath(QStringLiteral("vars.json"));
+    QFile varsFile(varsPath);
     if (varsFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         const QJsonDocument doc(QJsonObject::fromVariantMap(m_vars));
         varsFile.write(doc.toJson(QJsonDocument::Indented));
+        varsFile.close();
     }
 
     // 3. Macros
-    QFile macrosFile(stateFilePath(QStringLiteral("macros.json")));
+    const QString macrosPath = stateFilePath(QStringLiteral("macros.json"));
+    QFile macrosFile(macrosPath);
     if (macrosFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         const QJsonDocument doc(QJsonObject::fromVariantMap(m_macros));
         macrosFile.write(doc.toJson(QJsonDocument::Indented));
+        macrosFile.close();
     }
 
     // 4. Settings
-    QFile setFile(stateFilePath(QStringLiteral("settings.json")));
+    const QString setPath = stateFilePath(QStringLiteral("settings.json"));
+    QFile setFile(setPath);
     if (setFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QJsonObject obj;
         obj.insert(QStringLiteral("places"), m_places);
         obj.insert(QStringLiteral("radians"), m_radians);
         const QJsonDocument doc(obj);
         setFile.write(doc.toJson(QJsonDocument::Indented));
+        setFile.close();
     }
+
+    if (m_fileWatcher) {
+        const QStringList paths = {histPath, varsPath, macrosPath, setPath};
+        for (const QString &p : paths) {
+            if (QFile::exists(p) && !m_fileWatcher->files().contains(p)) {
+                m_fileWatcher->addPath(p);
+            }
+        }
+    }
+
+    m_isSavingState = false;
 }
 
 void Backend::saveHistoryEntry(const QString &expr, const QString &result, bool isError) {

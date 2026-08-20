@@ -9,37 +9,92 @@ set -e
 BIN_DIR="${HOME}/.local/bin"
 DESKTOP_DIR="${HOME}/.local/share/applications"
 ICON_DIR="${HOME}/.local/share/icons/hicolor/scalable/apps"
-MENU_FILE="${HOME}/.config/omarchy/extensions/omarchy-menu.jsonc"
+OMARCHY_PLUGIN_DIR="${HOME}/.config/omarchy/plugins/dorneles.alcalc"
+SHELL_CONFIG="${HOME}/.config/omarchy/shell.json"
+
+UNINSTALL_APP=true
+UNINSTALL_PLUGIN=true
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --plugin-only|-p)
+      UNINSTALL_APP=false
+      UNINSTALL_PLUGIN=true
+      shift
+      ;;
+    --app-only|-a)
+      UNINSTALL_APP=true
+      UNINSTALL_PLUGIN=false
+      shift
+      ;;
+    --all)
+      UNINSTALL_APP=true
+      UNINSTALL_PLUGIN=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: ./uninstall.sh [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --all              Uninstall everything (default)"
+      echo "  --plugin-only, -p  Uninstall ONLY the Omarchy plugin"
+      echo "  --app-only, -a     Uninstall ONLY the Desktop App & CLI"
+      echo "  -h, --help         Show this help message"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Run './uninstall.sh --help' for available options."
+      exit 1
+      ;;
+  esac
+done
 
 echo "🗑️ Uninstalling Alcalc..."
 
-rm -f "${BIN_DIR}/alcalc"
-echo "✓ Removed ${BIN_DIR}/alcalc"
+if [ "$UNINSTALL_APP" = true ]; then
+  rm -f "${BIN_DIR}/alcalc"
+  echo "✓ Removed ${BIN_DIR}/alcalc"
 
-rm -f "${DESKTOP_DIR}/alcalc.desktop"
-echo "✓ Removed ${DESKTOP_DIR}/alcalc.desktop"
+  rm -f "${DESKTOP_DIR}/alcalc.desktop"
+  echo "✓ Removed ${DESKTOP_DIR}/alcalc.desktop"
 
-rm -f "${ICON_DIR}/alcalc.svg"
-echo "✓ Removed ${ICON_DIR}/alcalc.svg"
+  rm -f "${ICON_DIR}/alcalc.svg"
+  echo "✓ Removed ${ICON_DIR}/alcalc.svg"
 
-# Remove from Omarchy menu if present
-if [ -f "${MENU_FILE}" ]; then
-  python3 -c "
-menu_path = '${MENU_FILE}'
+  if command -v update-desktop-database >/dev/null 2>&1; then
+      update-desktop-database "${DESKTOP_DIR}" 2>/dev/null || true
+  fi
+fi
+
+if [ "$UNINSTALL_PLUGIN" = true ]; then
+  rm -rf "${OMARCHY_PLUGIN_DIR}"
+  echo "✓ Removed Omarchy plugin (${OMARCHY_PLUGIN_DIR})"
+
+  # Remove from Omarchy shell.json if present
+  if [ -f "${SHELL_CONFIG}" ]; then
+    python3 -c "
+import json
+config_path = '${SHELL_CONFIG}'
 try:
-    with open(menu_path, 'r') as f:
-        lines = f.readlines()
-    new_lines = [l for l in lines if 'tools.math.alcalc' not in l]
-    with open(menu_path, 'w') as f:
-        f.writelines(new_lines)
-    print('✓ Removed Alcalc from Omarchy Application Menu')
+    with open(config_path, 'r') as f:
+        data = json.load(f)
+    for section in ['left', 'center', 'right']:
+        arr = data.get('bar', {}).get('layout', {}).get(section, [])
+        data['bar']['layout'][section] = [item for item in arr if (item.get('id') if isinstance(item, dict) else item) != 'dorneles.alcalc']
+    with open(config_path, 'w') as f:
+        json.dump(data, f, indent=2)
+    print('✓ Removed dorneles.alcalc from Omarchy bar layout')
 except Exception as e:
     pass
 "
+  fi
+
+  if command -v omarchy-restart-shell >/dev/null 2>&1; then
+    omarchy-restart-shell >/dev/null 2>&1 || true
+    echo "✓ Omarchy shell reloaded"
+  fi
 fi
 
-if command -v update-desktop-database >/dev/null 2>&1; then
-    update-desktop-database "${DESKTOP_DIR}" 2>/dev/null || true
-fi
-
-echo "✨ Alcalc uninstalled successfully."
+echo "✨ Uninstallation finished."

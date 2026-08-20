@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "dorneles.alcalc",
+  "name": "alcalc",
+  "version": "1.0.0",
+  "author": "Dorneles",
+  "license": "MIT",
+  "description": "Apple Calculator Language (ACL) bar widget and paper tape calculator popup.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Alcalc",
+    "description": "Paper Tape calculator and quick Apple Calculator Language evaluator",
+    "category": "Math",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showLastAns": false,
+      "iconOnly": true
+    },
+    "schema": [
+      {
+        "key": "showLastAns",
+        "type": "boolean",
+        "label": "Show Last Answer on Bar",
+        "defaultValue": false,
+        "description": "Display the latest computed answer on the status bar pill."
+      }
+    ]
+  }
+}

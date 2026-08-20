@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>Main.qml</file>
+        <file>PluginPopup.qml</file>
         <file>Engine.js</file>
         <file>components/CalcView.qml</file>
         <file>components/TapeView.qml</file>

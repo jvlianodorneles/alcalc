@@ -34,6 +34,9 @@
 - ⌨️ **Keyboard-First Experience:** Autofocus single-line uppercase input bar, history navigation (`↑`/`↓`), and quick clear (`Ctrl+K` / `Ctrl+L`).
 - 🧩 **Variables & Memory Inspector:** Inspect stored variables (`STORED` button) with 1-click management.
 - 📖 **Interactive Tabbed Manual (`F1` / `HELP ?`):** Compact 4-tab quick reference with 1-click sample expression insertion.
+- 🧩 **Omarchy Quickshell Plugin:** Seamless status bar item & popup applet for the Omarchy desktop shell.
+- 🪟 **Compact Popup Mode (`alcalc --popup`):** Focused paper tape and input bar applet for quick calculations.
+- 🔄 **Live State Synchronization:** Seamless real-time variable and history sharing across GUI, Quickshell, and CLI.
 - 💻 **Fast CLI Tool:** Evaluate expressions directly from your shell (`alcalc "1..100 INSERT +"`, `alcalc --explain "5 TOTHE 2 + 1"`).
 - 🎨 **Adaptive Theme Integration:** Dynamically adapts to dark/light mode and desktop font scaling.
 
@@ -41,19 +44,33 @@
 
 ## 🚀 Installation
 
-### Quick Install (Local User)
+Alcalc supports flexible and independent installation options:
 
-Clone the repository and run the installer script:
-
+### 1. Full Installation (App + CLI + Omarchy Plugin)
 ```bash
 git clone https://github.com/jvlianodorneles/alcalc.git
 cd alcalc
 ./install.sh
 ```
 
-The installer builds the application, places the binary in `~/.local/bin/alcalc`, installs the desktop launcher (`~/.local/share/applications/alcalc.desktop`), installs the vector icon, and registers Alcalc in the application menu.
+### 2. Plugin-Only Installation (No build tools or Qt6 dev headers required)
+Installs **only** the native status bar widget and dropdown paper tape for Omarchy Quickshell:
+```bash
+./install.sh --plugin-only
+```
 
-### Manual Build
+### 3. App & CLI Only Installation
+Installs the standalone Qt 6 GUI application and command-line evaluator:
+```bash
+./install.sh --app-only
+```
+
+### Uninstallation
+```bash
+./uninstall.sh                # Uninstall everything
+./uninstall.sh --plugin-only  # Remove only the Omarchy plugin
+./uninstall.sh --app-only     # Remove only the Desktop app & CLI
+```
 
 #### Requirements
 - Qt 6 (`qt6-base`, `qt6-declarative`, `qt6-quickcontrols2`)
@@ -101,6 +118,41 @@ alcalc --explain "5 TOTHE 2 + 10"
 # JSON formatted output
 alcalc --json "PI * (5 TOTHE 2)"
 ```
+
+---
+
+## 🧩 Quickshell & Plugin Mode (Omarchy Desktop)
+
+Alcalc integrates directly into the **Omarchy** desktop shell powered by **Quickshell**:
+
+### 1. Quickshell Status Bar Widget
+The installer copies the Alcalc Quickshell module to `~/.config/quickshell/modules/alcalc/`.
+
+To add the Alcalc widget to your Quickshell bar (`shell.qml`):
+
+```qml
+import Quickshell
+import "modules/alcalc" as Alcalc
+
+PanelWindow {
+    // ... your bar layout
+    Alcalc.AlcalcBarItem {}
+}
+```
+
+### 2. Standalone Compact Popup Mode (`alcalc --popup`)
+You can launch the compact Paper Tape popup applet from any launcher or keybinding:
+
+```bash
+alcalc --popup
+```
+
+In Hyprland (`hyprland.conf` or `hyprland.lua`):
+```ini
+bind = $mainMod, C, exec, alcalc --popup
+```
+
+Variables, history, and settings are synchronized live across the Quickshell widget, GUI, and CLI.
 
 ---
 
