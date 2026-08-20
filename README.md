@@ -13,6 +13,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux%20%7C%20Hyprland-blue.svg)](https://omarchy.org/)
 
+<br/>
+
+![Alcalc Preview](preview.png)
+
 </div>
 
 ---
