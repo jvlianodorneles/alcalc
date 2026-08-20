@@ -125,7 +125,7 @@ if [ "$INSTALL_PLUGIN" = true ]; then
   echo ""
   echo "🔌 [2/2] Installing Omarchy Quickshell Plugin..."
   mkdir -p "${OMARCHY_PLUGIN_DIR}"
-  cp -r "${SOURCE_DIR}/omarchy-plugin/"* "${OMARCHY_PLUGIN_DIR}/"
+  cp "${SOURCE_DIR}/manifest.json" "${SOURCE_DIR}/BarWidget.qml" "${SOURCE_DIR}/Panel.qml" "${SOURCE_DIR}/Engine.js" "${OMARCHY_PLUGIN_DIR}/"
   echo "✓ Installed status bar plugin to ${OMARCHY_PLUGIN_DIR}"
 
   # Register in Omarchy shell.json bar layout if present
