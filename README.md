@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![Alcalc Icon](icons/alcalc.svg)
-
 ### Apple Calculator Language (ACL) for Linux & Omarchy
 
 *An expressive array-oriented calculator application and CLI tool inspired by APL, classic Apple Calculator Language, and modern desktop workflows.*
