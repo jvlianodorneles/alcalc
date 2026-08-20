@@ -74,10 +74,17 @@ Installs the standalone Qt 6 GUI application and command-line evaluator:
 ./uninstall.sh --app-only     # Remove only the Desktop app & CLI
 ```
 
-#### Requirements
-- Qt 6 (`qt6-base`, `qt6-declarative`, `qt6-quickcontrols2`)
-- C++17 compiler (`g++` or `clang++`)
-- `qmake6` or `cmake`
+### Requirements & Dependencies
+
+- **For the Omarchy Plugin (`--plugin-only`):**
+  - [Omarchy](https://omarchy.org/) with Quickshell
+  - `wl-copy` (optional, for 1-click clipboard copy)
+  - *No compiler or build tools required.*
+
+- **For the Desktop Application & CLI (`--app-only` or full install):**
+  - Qt 6 (`qt6-base`, `qt6-declarative`, `qt6-quickcontrols2`)
+  - C++17 compiler (`g++` or `clang++`)
+  - `qmake6` or `cmake`
 
 ```bash
 # Using QMake
