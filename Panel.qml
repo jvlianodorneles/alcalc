@@ -27,32 +27,64 @@ Panel {
     return Quickshell.env("HOME") + "/.local/state/omarchy/alcalc"
   }
 
-  // Live file watching
-  property FileView histFile: FileView {
-    path: stateDir() + "/history.json"
-    watchChanges: true
-    printErrors: false
-    onFileChanged: reload()
-    onLoaded: {
-      try {
-        root.historyList = JSON.parse(text())
-      } catch (e) {}
+  readonly property string helperScript: {
+    var resolved = Qt.resolvedUrl("scripts/alcalc-state.py").toString().replace(/^file:\/\//, "")
+    return resolved
+  }
+
+  function reloadState() {
+    if (!stateReader.running) {
+      stateReader.running = true
     }
   }
 
-  property FileView varsFile: FileView {
+  Process {
+    id: stateReader
+    command: ["python3", root.helperScript, "read-all"]
+    running: false
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var raw = String(text || "").trim()
+        if (!raw) return
+        try {
+          var parsed = JSON.parse(raw)
+          if (parsed && typeof parsed === "object") {
+            if (Array.isArray(parsed.history)) {
+              root.historyList = parsed.history
+            }
+            if (parsed.vars && typeof parsed.vars === "object") {
+              root.varsMap = parsed.vars
+            }
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
+  // Live file watching without preloading in shell memory
+  property FileView histWatcher: FileView {
+    path: stateDir() + "/history.json"
+    watchChanges: true
+    preload: false
+    printErrors: false
+    onFileChanged: root.reloadState()
+  }
+
+  property FileView varsWatcher: FileView {
     path: stateDir() + "/vars.json"
     watchChanges: true
+    preload: false
     printErrors: false
-    onFileChanged: reload()
-    onLoaded: {
-      try {
-        root.varsMap = JSON.parse(text())
-      } catch (e) {}
-    }
+    onFileChanged: root.reloadState()
+  }
+
+  Component.onCompleted: {
+    root.reloadState()
   }
 
   function open() {
+    root.reloadState()
     root.controller.show()
     Qt.callLater(function() {
       if (inputField) inputField.forceActiveFocus()
@@ -78,14 +110,14 @@ Panel {
     if (rawExpr.length === 0) return
 
     if (rawExpr === "CLEAR" || rawExpr === "CLEAR TAPE") {
-      Quickshell.execDetached(["bash", "-c", "mkdir -p '" + stateDir() + "' && echo '[]' > '" + stateDir() + "/history.json'"])
+      Quickshell.execDetached(["python3", root.helperScript, "clear-history"])
       root.historyList = []
       inputField.text = ""
       return
     }
 
     if (rawExpr === "FORGET" || rawExpr === "FORGET ALL") {
-      Quickshell.execDetached(["bash", "-c", "mkdir -p '" + stateDir() + "' && echo '{}' > '" + stateDir() + "/vars.json'"])
+      Quickshell.execDetached(["python3", root.helperScript, "clear-vars"])
       root.varsMap = {}
       inputField.text = ""
       return
@@ -145,10 +177,10 @@ Panel {
     var newHist = [newEntry].concat(root.historyList.slice(0, 99))
     root.historyList = newHist
 
-    // Save to disk for cross-process synchronization
-    var histJson = JSON.stringify(newHist, null, 2)
-    var varsJson = JSON.stringify(root.varsMap, null, 2)
-    Quickshell.execDetached(["bash", "-c", "mkdir -p '" + stateDir() + "' && cat << 'EOF' > '" + stateDir() + "/history.json'\n" + histJson + "\nEOF\ncat << 'EOF' > '" + stateDir() + "/vars.json'\n" + varsJson + "\nEOF"])
+    // Save to disk for cross-process synchronization using descriptor-safe atomic helper
+    var histJson = JSON.stringify(newHist)
+    var varsJson = JSON.stringify(root.varsMap)
+    Quickshell.execDetached(["python3", root.helperScript, "write-state", histJson, varsJson])
 
     inputField.text = ""
     root.historyIndex = -1
@@ -210,7 +242,7 @@ Panel {
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onClicked: {
-                Quickshell.execDetached(["bash", "-c", "mkdir -p '" + stateDir() + "' && echo '[]' > '" + stateDir() + "/history.json'"])
+                Quickshell.execDetached(["python3", root.helperScript, "clear-history"])
                 root.historyList = []
               }
             }

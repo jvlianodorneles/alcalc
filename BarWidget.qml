@@ -13,17 +13,47 @@ BarWidget {
   property var varsState: ({})
   readonly property string lastAns: (varsState && varsState.ANS && varsState.ANS.items && varsState.ANS.items[0]) ? String(varsState.ANS.items[0].v) : ""
 
-  // Watch vars.json for live answer updates
-  property FileView varsFile: FileView {
+  readonly property string helperScript: {
+    var resolved = Qt.resolvedUrl("scripts/alcalc-state.py").toString().replace(/^file:\/\//, "")
+    return resolved
+  }
+
+  function reloadVars() {
+    if (!varsReader.running) {
+      varsReader.running = true
+    }
+  }
+
+  Process {
+    id: varsReader
+    command: ["python3", root.helperScript, "read-vars"]
+    running: false
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var raw = String(text || "").trim()
+        if (!raw) return
+        try {
+          var parsed = JSON.parse(raw)
+          if (parsed && typeof parsed === "object") {
+            root.varsState = parsed
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
+  // Watch vars.json for live answer updates without preloading in shell
+  property FileView varsWatcher: FileView {
     path: Quickshell.env("HOME") + "/.local/state/omarchy/alcalc/vars.json"
     watchChanges: true
+    preload: false
     printErrors: false
-    onFileChanged: reload()
-    onLoaded: {
-      try {
-        root.varsState = JSON.parse(text())
-      } catch (e) {}
-    }
+    onFileChanged: root.reloadVars()
+  }
+
+  Component.onCompleted: {
+    root.reloadVars()
   }
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false

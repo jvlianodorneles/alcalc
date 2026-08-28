@@ -124,8 +124,10 @@ fi
 if [ "$INSTALL_PLUGIN" = true ]; then
   echo ""
   echo "🔌 [2/2] Installing Omarchy Quickshell Plugin..."
-  mkdir -p "${OMARCHY_PLUGIN_DIR}"
+  mkdir -p "${OMARCHY_PLUGIN_DIR}/scripts"
   cp "${SOURCE_DIR}/manifest.json" "${SOURCE_DIR}/BarWidget.qml" "${SOURCE_DIR}/Panel.qml" "${SOURCE_DIR}/Engine.js" "${OMARCHY_PLUGIN_DIR}/"
+  cp "${SOURCE_DIR}/scripts/alcalc-state.py" "${OMARCHY_PLUGIN_DIR}/scripts/"
+  chmod +x "${OMARCHY_PLUGIN_DIR}/scripts/alcalc-state.py"
   echo "✓ Installed status bar plugin to ${OMARCHY_PLUGIN_DIR}"
 
   # Register in Omarchy shell.json bar layout if present
