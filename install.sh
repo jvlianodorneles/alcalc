@@ -102,20 +102,7 @@ if [ "$INSTALL_APP" = true ]; then
   fi
 
   # Configure floating window rule in Hyprland if present
-  if [ -f "${HYPR_CONF}" ]; then
-    python3 -c "
-hypr_path = '${HYPR_CONF}'
-try:
-    with open(hypr_path, 'r') as f:
-        content = f.read()
-    if '\"alcalc\"' not in content:
-        with open(hypr_path, 'a') as f:
-            f.write('\n-- Alcalc floating window rule\no.window(\"alcalc\", { float = true })\n')
-        print('✓ Configured Alcalc floating window rule in Hyprland')
-except Exception as e:
-    pass
-"
-  fi
+  python3 "${SOURCE_DIR}/scripts/alcalc-state.py" configure-hypr "${HOME}/.config/hypr" "hyprland.lua"
 fi
 
 # ------------------------------------------------------------------------------
@@ -131,25 +118,7 @@ if [ "$INSTALL_PLUGIN" = true ]; then
   echo "✓ Installed status bar plugin to ${OMARCHY_PLUGIN_DIR}"
 
   # Register in Omarchy shell.json bar layout if present
-  if [ -f "${SHELL_CONFIG}" ]; then
-    python3 -c "
-import json
-config_path = '${SHELL_CONFIG}'
-try:
-    with open(config_path, 'r') as f:
-        data = json.load(f)
-    bar_layout = data.setdefault('bar', {}).setdefault('layout', {})
-    right_list = bar_layout.setdefault('right', [])
-    ids = [item.get('id') if isinstance(item, dict) else item for item in right_list]
-    if 'dorneles.alcalc' not in ids:
-        right_list.insert(0, {'id': 'dorneles.alcalc'})
-        with open(config_path, 'w') as f:
-            json.dump(data, f, indent=2)
-        print('✓ Registered dorneles.alcalc in Omarchy bar layout (shell.json)')
-except Exception as e:
-    pass
-"
-  fi
+  python3 "${SOURCE_DIR}/scripts/alcalc-state.py" configure-shell "${HOME}/.config/omarchy" "shell.json"
 
   # Restart shell if running to apply changes immediately
   if command -v omarchy-restart-shell >/dev/null 2>&1; then

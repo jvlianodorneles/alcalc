@@ -113,3 +113,111 @@ test('Security: Oversized file is rejected by byte cap', () => {
   const readOut = execFileSync('python3', [HELPER_SCRIPT, 'read-vars'], { encoding: 'utf-8' });
   assert.equal(readOut.trim(), '{}');
 });
+
+test('Security: Planted symlink at ~/.config paths is rejected and victim is not overwritten', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'alcalc-config-test-'));
+  const victimPath = path.join(tmpDir, 'victim.txt');
+  fs.writeFileSync(victimPath, 'PRECIOUS_USER_DATA');
+
+  // Planted symlink for hyprland.lua
+  const hyprDir = path.join(tmpDir, 'hypr');
+  fs.mkdirSync(hyprDir);
+  const hyprSymlink = path.join(hyprDir, 'hyprland.lua');
+  fs.symlinkSync(victimPath, hyprSymlink);
+
+  // Configure hypr should NOT follow symlink or overwrite victim
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-hypr', hyprDir, 'hyprland.lua']);
+  assert.equal(fs.readFileSync(victimPath, 'utf-8'), 'PRECIOUS_USER_DATA');
+  assert.ok(fs.lstatSync(hyprSymlink).isSymbolicLink());
+
+  // Planted symlink for shell.json
+  const omarchyDir = path.join(tmpDir, 'omarchy');
+  fs.mkdirSync(omarchyDir);
+  const shellSymlink = path.join(omarchyDir, 'shell.json');
+  fs.symlinkSync(victimPath, shellSymlink);
+
+  // Configure shell should NOT follow symlink or overwrite victim
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-shell', omarchyDir, 'shell.json']);
+  assert.equal(fs.readFileSync(victimPath, 'utf-8'), 'PRECIOUS_USER_DATA');
+  assert.ok(fs.lstatSync(shellSymlink).isSymbolicLink());
+
+  // Unconfigure shell should NOT follow symlink or overwrite victim
+  execFileSync('python3', [HELPER_SCRIPT, 'unconfigure-shell', omarchyDir, 'shell.json']);
+  assert.equal(fs.readFileSync(victimPath, 'utf-8'), 'PRECIOUS_USER_DATA');
+  assert.ok(fs.lstatSync(shellSymlink).isSymbolicLink());
+
+  // Cleanup
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('Security: Planted FIFO at ~/.config paths does not hang configure/unconfigure operations', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'alcalc-fifo-test-'));
+
+  const hyprDir = path.join(tmpDir, 'hypr');
+  fs.mkdirSync(hyprDir);
+  const hyprFifo = path.join(hyprDir, 'hyprland.lua');
+  execFileSync('mkfifo', [hyprFifo]);
+
+  const omarchyDir = path.join(tmpDir, 'omarchy');
+  fs.mkdirSync(omarchyDir);
+  const shellFifo = path.join(omarchyDir, 'shell.json');
+  execFileSync('mkfifo', [shellFifo]);
+
+  // All three commands must finish immediately and not hang
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-hypr', hyprDir, 'hyprland.lua'], { timeout: 2000 });
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-shell', omarchyDir, 'shell.json'], { timeout: 2000 });
+  execFileSync('python3', [HELPER_SCRIPT, 'unconfigure-shell', omarchyDir, 'shell.json'], { timeout: 2000 });
+
+  // Assert they are still FIFOs (not replaced or corrupted)
+  assert.ok(fs.lstatSync(hyprFifo).isFIFO());
+  assert.ok(fs.lstatSync(shellFifo).isFIFO());
+
+  // Cleanup
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('Configuration: Descriptor-safe modification and idempotency of config files', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'alcalc-conf-test-'));
+
+  // Test Hyprland config
+  const hyprDir = path.join(tmpDir, 'hypr');
+  fs.mkdirSync(hyprDir);
+  const hyprFile = path.join(hyprDir, 'hyprland.lua');
+  fs.writeFileSync(hyprFile, '-- Hyprland Configuration\n');
+
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-hypr', hyprDir, 'hyprland.lua']);
+  const hyprContent = fs.readFileSync(hyprFile, 'utf-8');
+  assert.ok(hyprContent.includes('o.window("alcalc", { float = true })'));
+
+  // Idempotent: second run does not duplicate rule
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-hypr', hyprDir, 'hyprland.lua']);
+  const hyprContent2 = fs.readFileSync(hyprFile, 'utf-8');
+  assert.equal(hyprContent, hyprContent2);
+
+  // Test Omarchy shell.json config
+  const omarchyDir = path.join(tmpDir, 'omarchy');
+  fs.mkdirSync(omarchyDir);
+  const shellFile = path.join(omarchyDir, 'shell.json');
+  fs.writeFileSync(shellFile, JSON.stringify({ bar: { layout: { right: [{ id: 'clock' }] } } }, null, 2));
+
+  // Configure shell
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-shell', omarchyDir, 'shell.json']);
+  let shellData = JSON.parse(fs.readFileSync(shellFile, 'utf-8'));
+  assert.equal(shellData.bar.layout.right[0].id, 'dorneles.alcalc');
+  assert.equal(shellData.bar.layout.right[1].id, 'clock');
+
+  // Idempotent: second run does not duplicate plugin
+  execFileSync('python3', [HELPER_SCRIPT, 'configure-shell', omarchyDir, 'shell.json']);
+  shellData = JSON.parse(fs.readFileSync(shellFile, 'utf-8'));
+  assert.equal(shellData.bar.layout.right.filter(i => i.id === 'dorneles.alcalc').length, 1);
+
+  // Unconfigure shell
+  execFileSync('python3', [HELPER_SCRIPT, 'unconfigure-shell', omarchyDir, 'shell.json']);
+  shellData = JSON.parse(fs.readFileSync(shellFile, 'utf-8'));
+  assert.equal(shellData.bar.layout.right.filter(i => (i.id || i) === 'dorneles.alcalc').length, 0);
+  assert.equal(shellData.bar.layout.right[0].id, 'clock');
+
+  // Cleanup
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+

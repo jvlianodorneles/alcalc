@@ -164,6 +164,190 @@ def safe_write_file(filename: str, data, is_list: bool = False):
                 pass
 
 
+MAX_CONFIG_SIZE = 1024 * 1024  # 1 MB cap for configuration files
+
+
+def get_verified_path_dir_fd(dir_path: str):
+    """
+    Traverses and opens each path component starting from root without following symlinks.
+    Validates ownership (current user or root) and ensures directory permissions are secure.
+    """
+    abs_path = os.path.abspath(dir_path)
+    cur_fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0))
+    parts = abs_path.strip("/").split("/") if abs_path.strip("/") else []
+    try:
+        for part in parts:
+            next_fd = os.open(
+                part,
+                os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+                dir_fd=cur_fd,
+            )
+            os.close(cur_fd)
+            cur_fd = next_fd
+            st = os.fstat(cur_fd)
+            if not stat.S_ISDIR(st.st_mode):
+                raise OSError(f"'{part}' is not a directory")
+            if st.st_uid != 0 and st.st_uid != os.getuid():
+                raise OSError(f"'{part}' is not owned by current user or root (uid {st.st_uid})")
+            if (st.st_mode & 0o002) and not (st.st_mode & stat.S_ISVTX):
+                raise OSError(f"'{part}' has unsafe world-writable permissions ({oct(st.st_mode)})")
+        return cur_fd
+    except Exception:
+        os.close(cur_fd)
+        raise
+
+
+def safe_update_config(dir_path: str, filename: str, updater_fn) -> bool:
+    """
+    Safely reads and modifies an existing configuration file.
+    Uses descriptor-safe operations:
+    - O_NOFOLLOW | O_NONBLOCK ensures symlinks and FIFOs never redirect or block operations.
+    - fstat validates regular file, user ownership, and size bounds.
+    - Writes to an exclusive temporary file within dir_fd and replaces atomically relative to dir_fd.
+    """
+    dir_fd = None
+    file_fd = None
+    temp_fd = None
+    temp_name = None
+    try:
+        try:
+            dir_fd = get_verified_path_dir_fd(dir_path)
+        except Exception as e:
+            return False
+
+        open_flags = (
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_NONBLOCK", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+        )
+        try:
+            file_fd = os.open(filename, open_flags, dir_fd=dir_fd)
+        except (FileNotFoundError, OSError):
+            return False
+
+        st = os.fstat(file_fd)
+        if not stat.S_ISREG(st.st_mode):
+            return False
+        if st.st_uid != os.getuid():
+            return False
+        if st.st_size > MAX_CONFIG_SIZE:
+            return False
+
+        raw_bytes = os.read(file_fd, MAX_CONFIG_SIZE + 1)
+        if len(raw_bytes) > MAX_CONFIG_SIZE:
+            return False
+
+        orig_content = raw_bytes.decode("utf-8", errors="replace")
+        orig_mode = st.st_mode & 0o777
+        os.close(file_fd)
+        file_fd = None
+
+        new_content = updater_fn(orig_content)
+        if new_content is None or new_content == orig_content:
+            return False
+
+        temp_name = f".{filename}.tmp.{os.getpid()}.{secrets.token_hex(8)}"
+        temp_flags = (
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0)
+        )
+        temp_fd = os.open(temp_name, temp_flags, orig_mode, dir_fd=dir_fd)
+        st_tmp = os.fstat(temp_fd)
+        if not stat.S_ISREG(st_tmp.st_mode) or st_tmp.st_uid != os.getuid():
+            return False
+
+        payload = new_content.encode("utf-8")
+        total_written = 0
+        while total_written < len(payload):
+            n = os.write(temp_fd, payload[total_written:])
+            if n <= 0:
+                return False
+            total_written += n
+
+        os.fsync(temp_fd)
+        os.close(temp_fd)
+        temp_fd = None
+
+        os.replace(temp_name, filename, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        temp_name = None
+        return True
+    except Exception as e:
+        print(f"Error updating config {filename}: {e}", file=sys.stderr)
+        return False
+    finally:
+        if file_fd is not None:
+            try:
+                os.close(file_fd)
+            except OSError:
+                pass
+        if temp_fd is not None:
+            try:
+                os.close(temp_fd)
+            except OSError:
+                pass
+        if temp_name is not None and dir_fd is not None:
+            try:
+                os.unlink(temp_name, dir_fd=dir_fd)
+            except OSError:
+                pass
+        if dir_fd is not None:
+            try:
+                os.close(dir_fd)
+            except OSError:
+                pass
+
+
+def update_hypr_rule(dir_path: str, filename: str = "hyprland.lua") -> bool:
+    def _add_rule(content: str):
+        if '"alcalc"' in content:
+            return content
+        rule = '\n-- Alcalc floating window rule\no.window("alcalc", { float = true })\n'
+        return content + rule
+
+    return safe_update_config(dir_path, filename, _add_rule)
+
+
+def register_shell_plugin(dir_path: str, filename: str = "shell.json") -> bool:
+    def _add_plugin(content: str):
+        try:
+            data = json.loads(content)
+        except Exception:
+            return None
+        bar_layout = data.setdefault("bar", {}).setdefault("layout", {})
+        right_list = bar_layout.setdefault("right", [])
+        ids = [item.get("id") if isinstance(item, dict) else item for item in right_list]
+        if "dorneles.alcalc" not in ids:
+            right_list.insert(0, {"id": "dorneles.alcalc"})
+            return json.dumps(data, indent=2) + "\n"
+        return content
+
+    return safe_update_config(dir_path, filename, _add_plugin)
+
+
+def unregister_shell_plugin(dir_path: str, filename: str = "shell.json") -> bool:
+    def _remove_plugin(content: str):
+        try:
+            data = json.loads(content)
+        except Exception:
+            return None
+        modified = False
+        for section in ["left", "center", "right"]:
+            arr = data.get("bar", {}).get("layout", {}).get(section, [])
+            new_arr = [item for item in arr if (item.get("id") if isinstance(item, dict) else item) != "dorneles.alcalc"]
+            if len(new_arr) != len(arr):
+                data["bar"]["layout"][section] = new_arr
+                modified = True
+        if modified:
+            return json.dumps(data, indent=2) + "\n"
+        return content
+
+    return safe_update_config(dir_path, filename, _remove_plugin)
+
+
 def parse_input_json(raw: str, default_val):
     if not raw or raw.strip() == "":
         return default_val
@@ -176,7 +360,7 @@ def parse_input_json(raw: str, default_val):
 def main():
     if len(sys.argv) < 2:
         print("Usage: alcalc-state.py <command> [args...]", file=sys.stderr)
-        print("Commands: read-history, read-vars, read-all, write-history, write-vars, write-state, clear-history, clear-vars", file=sys.stderr)
+        print("Commands: read-history, read-vars, read-all, write-history, write-vars, write-state, clear-history, clear-vars, configure-hypr, configure-shell, unconfigure-shell", file=sys.stderr)
         sys.exit(1)
 
     cmd = sys.argv[1]
@@ -223,6 +407,27 @@ def main():
     elif cmd == "clear-vars":
         success = safe_write_file("vars.json", {}, is_list=False)
         sys.exit(0 if success else 1)
+    elif cmd == "configure-hypr":
+        dir_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.config/hypr")
+        filename = sys.argv[3] if len(sys.argv) > 3 else "hyprland.lua"
+        success = update_hypr_rule(dir_path, filename)
+        if success:
+            print("✓ Configured Alcalc floating window rule in Hyprland")
+        sys.exit(0)
+    elif cmd == "configure-shell":
+        dir_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.config/omarchy")
+        filename = sys.argv[3] if len(sys.argv) > 3 else "shell.json"
+        success = register_shell_plugin(dir_path, filename)
+        if success:
+            print("✓ Registered dorneles.alcalc in Omarchy bar layout (shell.json)")
+        sys.exit(0)
+    elif cmd == "unconfigure-shell":
+        dir_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.config/omarchy")
+        filename = sys.argv[3] if len(sys.argv) > 3 else "shell.json"
+        success = unregister_shell_plugin(dir_path, filename)
+        if success:
+            print("✓ Removed dorneles.alcalc from Omarchy bar layout")
+        sys.exit(0)
     else:
         print(f"Unknown command: {cmd}", file=sys.stderr)
         sys.exit(1)

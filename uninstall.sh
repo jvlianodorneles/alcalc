@@ -6,11 +6,11 @@
 
 set -e
 
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN_DIR="${HOME}/.local/bin"
 DESKTOP_DIR="${HOME}/.local/share/applications"
 ICON_DIR="${HOME}/.local/share/icons/hicolor/scalable/apps"
 OMARCHY_PLUGIN_DIR="${HOME}/.config/omarchy/plugins/dorneles.alcalc"
-SHELL_CONFIG="${HOME}/.config/omarchy/shell.json"
 
 UNINSTALL_APP=true
 UNINSTALL_PLUGIN=true
@@ -69,27 +69,15 @@ if [ "$UNINSTALL_APP" = true ]; then
 fi
 
 if [ "$UNINSTALL_PLUGIN" = true ]; then
+  # Remove from Omarchy shell.json if present
+  if [ -f "${SOURCE_DIR}/scripts/alcalc-state.py" ]; then
+    python3 "${SOURCE_DIR}/scripts/alcalc-state.py" unconfigure-shell "${HOME}/.config/omarchy" "shell.json"
+  elif [ -f "${OMARCHY_PLUGIN_DIR}/scripts/alcalc-state.py" ]; then
+    python3 "${OMARCHY_PLUGIN_DIR}/scripts/alcalc-state.py" unconfigure-shell "${HOME}/.config/omarchy" "shell.json"
+  fi
+
   rm -rf "${OMARCHY_PLUGIN_DIR}"
   echo "✓ Removed Omarchy plugin (${OMARCHY_PLUGIN_DIR})"
-
-  # Remove from Omarchy shell.json if present
-  if [ -f "${SHELL_CONFIG}" ]; then
-    python3 -c "
-import json
-config_path = '${SHELL_CONFIG}'
-try:
-    with open(config_path, 'r') as f:
-        data = json.load(f)
-    for section in ['left', 'center', 'right']:
-        arr = data.get('bar', {}).get('layout', {}).get(section, [])
-        data['bar']['layout'][section] = [item for item in arr if (item.get('id') if isinstance(item, dict) else item) != 'dorneles.alcalc']
-    with open(config_path, 'w') as f:
-        json.dump(data, f, indent=2)
-    print('✓ Removed dorneles.alcalc from Omarchy bar layout')
-except Exception as e:
-    pass
-"
-  fi
 
   if command -v omarchy-restart-shell >/dev/null 2>&1; then
     omarchy-restart-shell >/dev/null 2>&1 || true
