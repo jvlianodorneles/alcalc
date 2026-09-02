@@ -221,3 +221,74 @@ test('Configuration: Descriptor-safe modification and idempotency of config file
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
+test('Configuration Integrity: CAS revalidation detects concurrent edits and avoids silent overwriting', () => {
+  const pyCode = `
+import sys, os, importlib.util
+spec = importlib.util.spec_from_file_location("alcalc_state", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+import tempfile
+with tempfile.TemporaryDirectory() as td:
+    cfg_file = os.path.join(td, "test.conf")
+    with open(cfg_file, "w") as f:
+        f.write("INITIAL_CONTENT\\n")
+    
+    attempts = [0]
+    def concurrent_edit_updater(content):
+        attempts[0] += 1
+        if attempts[0] == 1:
+            # Simulate a concurrent user edit in the file before commit
+            with open(cfg_file, "w") as f2:
+                f2.write("CONCURRENT_USER_EDIT\\n")
+        return content + "ALCALC_ADDITION\\n"
+    
+    res = mod.safe_update_config(td, "test.conf", concurrent_edit_updater)
+    assert res is True, "safe_update_config should succeed after retry"
+    assert attempts[0] == 2, f"Expected 2 attempts due to CAS retry, got {attempts[0]}"
+    
+    with open(cfg_file, "r") as f:
+        final_content = f.read()
+    assert "CONCURRENT_USER_EDIT" in final_content, "Concurrent user edit must not be overwritten"
+    assert "ALCALC_ADDITION" in final_content, "New addition must be present in file"
+`;
+  execFileSync('python3', ['-c', pyCode, HELPER_SCRIPT]);
+});
+
+test('Configuration Integrity: CAS revalidation detects concurrent inode replacement', () => {
+  const pyCode = `
+import sys, os, importlib.util
+spec = importlib.util.spec_from_file_location("alcalc_state", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+import tempfile
+with tempfile.TemporaryDirectory() as td:
+    cfg_file = os.path.join(td, "test.conf")
+    with open(cfg_file, "w") as f:
+        f.write("INITIAL_CONTENT\\n")
+    
+    attempts = [0]
+    def concurrent_replace_updater(content):
+        attempts[0] += 1
+        if attempts[0] == 1:
+            # Simulate atomic rename/replacement by external editor (new inode)
+            tmp_other = os.path.join(td, "other.tmp")
+            with open(tmp_other, "w") as f_other:
+                f_other.write("EXTERNAL_EDITOR_REPLACE\\n")
+            os.replace(tmp_other, cfg_file)
+        return content + "ALCALC_ADDITION\\n"
+    
+    res = mod.safe_update_config(td, "test.conf", concurrent_replace_updater)
+    assert res is True, "safe_update_config should succeed after CAS retry on inode change"
+    assert attempts[0] == 2, f"Expected 2 attempts due to inode change, got {attempts[0]}"
+    
+    with open(cfg_file, "r") as f:
+        final_content = f.read()
+    assert "EXTERNAL_EDITOR_REPLACE" in final_content
+    assert "ALCALC_ADDITION" in final_content
+`;
+  execFileSync('python3', ['-c', pyCode, HELPER_SCRIPT]);
+});
+
+

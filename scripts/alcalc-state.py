@@ -9,6 +9,7 @@ import os
 import json
 import stat
 import secrets
+import fcntl
 
 MAX_STATE_SIZE = 512 * 1024  # 512 KB cap to prevent DoS / unbounded memory consumption
 STATE_DIR = os.path.expanduser("~/.local/state/omarchy/alcalc")
@@ -142,6 +143,10 @@ def safe_write_file(filename: str, data, is_list: bool = False):
 
         os.replace(temp_name, filename, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
         temp_name = None
+        try:
+            os.fsync(dir_fd)
+        except OSError:
+            pass
         return True
     except Exception as e:
         print(f"Error writing {filename}: {e}", file=sys.stderr)
@@ -197,22 +202,24 @@ def get_verified_path_dir_fd(dir_path: str):
         raise
 
 
-def safe_update_config(dir_path: str, filename: str, updater_fn) -> bool:
+def safe_update_config(dir_path: str, filename: str, updater_fn, max_retries: int = 5) -> bool:
     """
-    Safely reads and modifies an existing configuration file.
+    Safely reads and modifies an existing configuration file with descriptor safety,
+    transaction locking, version-bound compare-and-swap (CAS) revalidation, and directory fsync.
     Uses descriptor-safe operations:
     - O_NOFOLLOW | O_NONBLOCK ensures symlinks and FIFOs never redirect or block operations.
     - fstat validates regular file, user ownership, and size bounds.
+    - Acquires advisory lock and checks version identity (dev, ino, mtime, size, content)
+      immediately prior to replacing the entry.
+    - If target changed concurrently, retries with updated content up to max_retries.
     - Writes to an exclusive temporary file within dir_fd and replaces atomically relative to dir_fd.
+    - fsyncs both the temporary file and the held directory descriptor.
     """
     dir_fd = None
-    file_fd = None
-    temp_fd = None
-    temp_name = None
     try:
         try:
             dir_fd = get_verified_path_dir_fd(dir_path)
-        except Exception as e:
+        except Exception:
             return False
 
         open_flags = (
@@ -221,79 +228,131 @@ def safe_update_config(dir_path: str, filename: str, updater_fn) -> bool:
             | getattr(os, "O_NONBLOCK", 0)
             | getattr(os, "O_CLOEXEC", 0)
         )
-        try:
-            file_fd = os.open(filename, open_flags, dir_fd=dir_fd)
-        except (FileNotFoundError, OSError):
-            return False
 
-        st = os.fstat(file_fd)
-        if not stat.S_ISREG(st.st_mode):
-            return False
-        if st.st_uid != os.getuid():
-            return False
-        if st.st_size > MAX_CONFIG_SIZE:
-            return False
+        for _ in range(max_retries):
+            file_fd = None
+            temp_fd = None
+            temp_name = None
+            check_fd = None
+            try:
+                try:
+                    file_fd = os.open(filename, open_flags, dir_fd=dir_fd)
+                except (FileNotFoundError, OSError):
+                    return False
 
-        raw_bytes = os.read(file_fd, MAX_CONFIG_SIZE + 1)
-        if len(raw_bytes) > MAX_CONFIG_SIZE:
-            return False
+                # Hold advisory transaction lock if possible
+                try:
+                    fcntl.flock(file_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except (BlockingIOError, OSError):
+                    pass
 
-        orig_content = raw_bytes.decode("utf-8", errors="replace")
-        orig_mode = st.st_mode & 0o777
-        os.close(file_fd)
-        file_fd = None
+                st = os.fstat(file_fd)
+                if not stat.S_ISREG(st.st_mode):
+                    return False
+                if st.st_uid != os.getuid():
+                    return False
+                if st.st_size > MAX_CONFIG_SIZE:
+                    return False
 
-        new_content = updater_fn(orig_content)
-        if new_content is None or new_content == orig_content:
-            return False
+                raw_bytes = os.read(file_fd, MAX_CONFIG_SIZE + 1)
+                if len(raw_bytes) > MAX_CONFIG_SIZE:
+                    return False
 
-        temp_name = f".{filename}.tmp.{os.getpid()}.{secrets.token_hex(8)}"
-        temp_flags = (
-            os.O_WRONLY
-            | os.O_CREAT
-            | os.O_EXCL
-            | getattr(os, "O_NOFOLLOW", 0)
-            | getattr(os, "O_CLOEXEC", 0)
-        )
-        temp_fd = os.open(temp_name, temp_flags, orig_mode, dir_fd=dir_fd)
-        st_tmp = os.fstat(temp_fd)
-        if not stat.S_ISREG(st_tmp.st_mode) or st_tmp.st_uid != os.getuid():
-            return False
+                orig_content = raw_bytes.decode("utf-8", errors="replace")
+                orig_mode = st.st_mode & 0o777
 
-        payload = new_content.encode("utf-8")
-        total_written = 0
-        while total_written < len(payload):
-            n = os.write(temp_fd, payload[total_written:])
-            if n <= 0:
-                return False
-            total_written += n
+                new_content = updater_fn(orig_content)
+                if new_content is None or new_content == orig_content:
+                    return False
 
-        os.fsync(temp_fd)
-        os.close(temp_fd)
-        temp_fd = None
+                temp_name = f".{filename}.tmp.{os.getpid()}.{secrets.token_hex(8)}"
+                temp_flags = (
+                    os.O_WRONLY
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_NOFOLLOW", 0)
+                    | getattr(os, "O_CLOEXEC", 0)
+                )
+                temp_fd = os.open(temp_name, temp_flags, orig_mode, dir_fd=dir_fd)
+                st_tmp = os.fstat(temp_fd)
+                if not stat.S_ISREG(st_tmp.st_mode) or st_tmp.st_uid != os.getuid():
+                    return False
 
-        os.replace(temp_name, filename, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
-        temp_name = None
-        return True
+                payload = new_content.encode("utf-8")
+                total_written = 0
+                while total_written < len(payload):
+                    n = os.write(temp_fd, payload[total_written:])
+                    if n <= 0:
+                        return False
+                    total_written += n
+
+                os.fsync(temp_fd)
+                os.close(temp_fd)
+                temp_fd = None
+
+                # Version-bound compare-and-swap / revalidation immediately before replacement
+                try:
+                    check_fd = os.open(filename, open_flags, dir_fd=dir_fd)
+                except (FileNotFoundError, OSError):
+                    return False
+
+                st_check = os.fstat(check_fd)
+                if (
+                    not stat.S_ISREG(st_check.st_mode)
+                    or st_check.st_uid != os.getuid()
+                    or st_check.st_dev != st.st_dev
+                    or st_check.st_ino != st.st_ino
+                    or st_check.st_size != st.st_size
+                    or st_check.st_mtime_ns != st.st_mtime_ns
+                ):
+                    # Target changed concurrently; clean up and retry
+                    continue
+
+                check_bytes = os.read(check_fd, MAX_CONFIG_SIZE + 1)
+                if check_bytes != raw_bytes:
+                    # Target content changed concurrently; clean up and retry
+                    continue
+
+                os.close(check_fd)
+                check_fd = None
+                os.close(file_fd)
+                file_fd = None
+
+                os.replace(temp_name, filename, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                temp_name = None
+
+                try:
+                    os.fsync(dir_fd)
+                except OSError:
+                    pass
+
+                return True
+            finally:
+                if check_fd is not None:
+                    try:
+                        os.close(check_fd)
+                    except OSError:
+                        pass
+                if file_fd is not None:
+                    try:
+                        os.close(file_fd)
+                    except OSError:
+                        pass
+                if temp_fd is not None:
+                    try:
+                        os.close(temp_fd)
+                    except OSError:
+                        pass
+                if temp_name is not None and dir_fd is not None:
+                    try:
+                        os.unlink(temp_name, dir_fd=dir_fd)
+                    except OSError:
+                        pass
+        return False
     except Exception as e:
         print(f"Error updating config {filename}: {e}", file=sys.stderr)
         return False
     finally:
-        if file_fd is not None:
-            try:
-                os.close(file_fd)
-            except OSError:
-                pass
-        if temp_fd is not None:
-            try:
-                os.close(temp_fd)
-            except OSError:
-                pass
-        if temp_name is not None and dir_fd is not None:
-            try:
-                os.unlink(temp_name, dir_fd=dir_fd)
-            except OSError:
-                pass
         if dir_fd is not None:
             try:
                 os.close(dir_fd)
