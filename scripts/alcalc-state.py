@@ -313,11 +313,7 @@ def safe_update_config(dir_path: str, filename: str, updater_fn, max_retries: in
                     # Target content changed concurrently; clean up and retry
                     continue
 
-                os.close(check_fd)
-                check_fd = None
-                os.close(file_fd)
-                file_fd = None
-
+                # Atomically replace while descriptors and transaction locks remain held
                 os.replace(temp_name, filename, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
                 temp_name = None
 

@@ -5,7 +5,16 @@
   "version": "1.0.0",
   "author": "Dorneles",
   "license": "MIT",
+  "icon": "icons/alcalc.svg",
   "description": "Apple Calculator Language (ACL) bar widget and paper tape calculator popup.",
+  "keywords": [
+    "calculator",
+    "math",
+    "tape",
+    "acl",
+    "quickshell",
+    "omarchy"
+  ],
   "kinds": [
     "bar-widget"
   ],
