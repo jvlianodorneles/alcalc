@@ -57,8 +57,9 @@ done
 
 echo "🧮 Installing Alcalc (Apple Calculator Language)..."
 
-# Ensure common state directory
+# Ensure common state directory with strict user-only permissions (0700)
 mkdir -p "${STATE_DIR}"
+chmod 700 "${STATE_DIR}"
 
 # ------------------------------------------------------------------------------
 # 1. Build and Install Standalone App & CLI

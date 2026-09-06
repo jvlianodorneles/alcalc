@@ -970,6 +970,10 @@ function getSmartErrorTip(errMessage, expr) {
   return null;
 }
 
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function expandMacros(macrosMap, expr) {
   if (!macrosMap) return { expandedExpr: expr, usedMacros: [] };
   const macroKeys = Object.keys(macrosMap);
@@ -978,7 +982,10 @@ function expandMacros(macrosMap, expr) {
   let expanded = expr;
   const used = [];
   for (const name of macroKeys) {
-    const regex = new RegExp(`\\b${name}\\b`, 'g');
+    const escaped = escapeRegExp(name);
+    const prefix = /^\w/.test(name) ? '\\b' : '(?<!\\w)';
+    const suffix = /\w$/.test(name) ? '\\b' : '(?!\\w)';
+    const regex = new RegExp(`${prefix}${escaped}${suffix}`, 'g');
     if (regex.test(expanded)) {
       expanded = expanded.replace(regex, `(${macrosMap[name]})`);
       used.push(name);

@@ -102,7 +102,7 @@ Panel {
 
   function copyText(text) {
     if (!text || text.length === 0) return
-    Quickshell.execDetached(["wl-copy", text])
+    Quickshell.execDetached(["wl-copy", "--", text])
   }
 
   function evaluateCurrent(isExplain) {
@@ -172,6 +172,10 @@ Panel {
         explainOut += "= " + newEntry.result
         newEntry.result = explainOut
       }
+    }
+
+    if (newEntry.result && newEntry.result.length > 4096) {
+      newEntry.result = newEntry.result.slice(0, 4096) + "..."
     }
 
     var newHist = [newEntry].concat(root.historyList.slice(0, 99))

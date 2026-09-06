@@ -291,4 +291,91 @@ with tempfile.TemporaryDirectory() as td:
   execFileSync('python3', ['-c', pyCode, HELPER_SCRIPT]);
 });
 
+test('Security: Path traversal and absolute path injection are rejected by helper functions and CLI', () => {
+  // 1. CLI rejection of path traversal
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'alcalc-traversal-test-'));
+  assert.throws(() => {
+    execFileSync('python3', [HELPER_SCRIPT, 'configure-hypr', tmpDir, '../evil.lua']);
+  });
+  assert.throws(() => {
+    execFileSync('python3', [HELPER_SCRIPT, 'configure-hypr', tmpDir, '/etc/evil.lua']);
+  });
+  assert.throws(() => {
+    execFileSync('python3', [HELPER_SCRIPT, 'configure-shell', tmpDir, 'sub/evil.json']);
+  });
+
+  // 2. Python module internal check for safe_read_file, safe_write_file, and safe_update_config
+  const pyCode = `
+import sys, importlib.util
+spec = importlib.util.spec_from_file_location("alcalc_state", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+
+assert not mod.is_safe_basename("../test.json")
+assert not mod.is_safe_basename("/tmp/test.json")
+assert not mod.is_safe_basename("sub/test.json")
+assert not mod.is_safe_basename(".")
+assert not mod.is_safe_basename("..")
+assert not mod.is_safe_basename("test\\0.json")
+assert mod.is_safe_basename("history.json")
+assert mod.is_safe_basename("vars.json")
+
+# safe_read_file rejection
+assert mod.safe_read_file("../secret.txt", "DEFAULT") == "DEFAULT"
+# safe_write_file rejection
+assert mod.safe_write_file("../secret.txt", {}, is_list=False) is False
+# safe_update_config rejection
+assert mod.safe_update_config(sys.argv[2], "../secret.txt", lambda x: x) is False
+`;
+  execFileSync('python3', ['-c', pyCode, HELPER_SCRIPT, tmpDir]);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('Security: write-state supports atomic batch update via stdin without command-line argument exposure', () => {
+  const testPayload = {
+    history: [{ expr: 'STDIN_EXPR', result: '999', time: '13:00:00' }],
+    vars: { STDIN_VAR: 777 }
+  };
+
+  // Run write-state passing payload via STDIN
+  execFileSync('python3', [HELPER_SCRIPT, 'write-state'], {
+    input: JSON.stringify(testPayload),
+    encoding: 'utf-8'
+  });
+
+  // Read back all
+  const out = execFileSync('python3', [HELPER_SCRIPT, 'read-all'], { encoding: 'utf-8' });
+  const parsed = JSON.parse(out);
+  assert.deepEqual(parsed.history, testPayload.history);
+  assert.deepEqual(parsed.vars, testPayload.vars);
+});
+
+test('Security: STATE_DIR permissions are restricted to user-only mode (0700)', () => {
+  // Force a read or write to ensure STATE_DIR is verified
+  execFileSync('python3', [HELPER_SCRIPT, 'read-history']);
+  const stat = fs.statSync(STATE_DIR);
+  assert.equal(stat.mode & 0o777, 0o700, 'STATE_DIR must have 0700 permissions');
+});
+
+test('Security: Engine macro expansion escapes regex metacharacters safely', () => {
+  const Engine = require('../Engine.js');
+  const macros = {
+    'C++': '10',
+    'A*B': '20',
+    'F(X)': '30',
+    'X.Y': '40'
+  };
+
+  // Should expand cleanly without throwing SyntaxError: Invalid regular expression
+  const res1 = Engine.expandMacros(macros, 'C++ + 5');
+  assert.ok(res1.expandedExpr.includes('(10)'));
+
+  const res2 = Engine.expandMacros(macros, 'A*B / 2');
+  assert.ok(res2.expandedExpr.includes('(20)'));
+
+  const res3 = Engine.expandMacros(macros, 'X.Y + 1');
+  assert.ok(res3.expandedExpr.includes('(40)'));
+});
+
+
 

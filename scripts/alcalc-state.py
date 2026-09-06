@@ -15,22 +15,67 @@ MAX_STATE_SIZE = 512 * 1024  # 512 KB cap to prevent DoS / unbounded memory cons
 STATE_DIR = os.path.expanduser("~/.local/state/omarchy/alcalc")
 
 
+def is_safe_basename(filename: str) -> bool:
+    """
+    Validates that filename is strictly a single base filename without path separators,
+    null bytes, or traversal sequences like '.' or '..'.
+    """
+    if not filename or not isinstance(filename, str):
+        return False
+    if os.path.basename(filename) != filename:
+        return False
+    if "/" in filename or "\\" in filename or "\0" in filename:
+        return False
+    if filename in (".", ".."):
+        return False
+    return True
+
+
+def get_verified_path_dir_fd(dir_path: str):
+    """
+    Traverses and opens each path component starting from root without following symlinks.
+    Validates ownership (current user or root) and ensures directory permissions are secure.
+    """
+    abs_path = os.path.abspath(dir_path)
+    cur_fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0))
+    parts = abs_path.strip("/").split("/") if abs_path.strip("/") else []
+    try:
+        for part in parts:
+            next_fd = os.open(
+                part,
+                os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
+                dir_fd=cur_fd,
+            )
+            os.close(cur_fd)
+            cur_fd = next_fd
+            st = os.fstat(cur_fd)
+            if not stat.S_ISDIR(st.st_mode):
+                raise OSError(f"'{part}' is not a directory")
+            if st.st_uid != 0 and st.st_uid != os.getuid():
+                raise OSError(f"'{part}' is not owned by current user or root (uid {st.st_uid})")
+            if (st.st_mode & 0o002) and not (st.st_mode & stat.S_ISVTX):
+                raise OSError(f"'{part}' has unsafe world-writable permissions ({oct(st.st_mode)})")
+        return cur_fd
+    except Exception:
+        os.close(cur_fd)
+        raise
+
+
 def get_verified_state_dir_fd():
     """
-    Creates (if needed), opens, and strictly verifies the STATE_DIR descriptor.
-    Refuses symlinks, foreign-owned directories, or insecure world-writable permissions.
+    Creates (if needed), verifies, and opens the STATE_DIR descriptor.
+    Enforces strict permissions (0700) and uses get_verified_path_dir_fd
+    to reject symlinks and unowned path components across the entire directory hierarchy.
     """
     os.makedirs(STATE_DIR, mode=0o700, exist_ok=True)
-    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
-    dir_fd = os.open(STATE_DIR, flags)
+    dir_fd = get_verified_path_dir_fd(STATE_DIR)
     try:
         st = os.fstat(dir_fd)
-        if not stat.S_ISDIR(st.st_mode):
-            raise OSError(f"STATE_DIR '{STATE_DIR}' is not a directory")
-        if st.st_uid != os.getuid():
-            raise OSError(f"STATE_DIR '{STATE_DIR}' is not owned by current user (uid {st.st_uid} != {os.getuid()})")
-        if st.st_mode & 0o002:
-            raise OSError(f"STATE_DIR '{STATE_DIR}' has unsafe world-writable permissions ({oct(st.st_mode)})")
+        if st.st_mode & 0o077:
+            try:
+                os.fchmod(dir_fd, 0o700)
+            except OSError:
+                pass
         return dir_fd
     except Exception:
         os.close(dir_fd)
@@ -42,6 +87,8 @@ def safe_read_file(filename: str, default_val):
     Safely reads JSON file using non-blocking, no-follow descriptor open,
     fstat validation (regular file, ownership, size cap), and bounded read.
     """
+    if not is_safe_basename(filename):
+        return default_val
     dir_fd = None
     fd = None
     try:
@@ -102,6 +149,8 @@ def safe_write_file(filename: str, data, is_list: bool = False):
     Safely writes JSON file using exclusive temporary file creation,
     fstat validation, bounded write, fsync, and atomic replace relative to dir_fd.
     """
+    if not is_safe_basename(filename):
+        return False
     dir_fd = None
     temp_fd = None
     temp_name = None
@@ -172,34 +221,7 @@ def safe_write_file(filename: str, data, is_list: bool = False):
 MAX_CONFIG_SIZE = 1024 * 1024  # 1 MB cap for configuration files
 
 
-def get_verified_path_dir_fd(dir_path: str):
-    """
-    Traverses and opens each path component starting from root without following symlinks.
-    Validates ownership (current user or root) and ensures directory permissions are secure.
-    """
-    abs_path = os.path.abspath(dir_path)
-    cur_fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0))
-    parts = abs_path.strip("/").split("/") if abs_path.strip("/") else []
-    try:
-        for part in parts:
-            next_fd = os.open(
-                part,
-                os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0),
-                dir_fd=cur_fd,
-            )
-            os.close(cur_fd)
-            cur_fd = next_fd
-            st = os.fstat(cur_fd)
-            if not stat.S_ISDIR(st.st_mode):
-                raise OSError(f"'{part}' is not a directory")
-            if st.st_uid != 0 and st.st_uid != os.getuid():
-                raise OSError(f"'{part}' is not owned by current user or root (uid {st.st_uid})")
-            if (st.st_mode & 0o002) and not (st.st_mode & stat.S_ISVTX):
-                raise OSError(f"'{part}' has unsafe world-writable permissions ({oct(st.st_mode)})")
-        return cur_fd
-    except Exception:
-        os.close(cur_fd)
-        raise
+MAX_CONFIG_SIZE = 1024 * 1024  # 1 MB cap for configuration files
 
 
 def safe_update_config(dir_path: str, filename: str, updater_fn, max_retries: int = 5) -> bool:
@@ -215,6 +237,8 @@ def safe_update_config(dir_path: str, filename: str, updater_fn, max_retries: in
     - Writes to an exclusive temporary file within dir_fd and replaces atomically relative to dir_fd.
     - fsyncs both the temporary file and the held directory descriptor.
     """
+    if not is_safe_basename(filename):
+        return False
     dir_fd = None
     try:
         try:
@@ -445,10 +469,23 @@ def main():
         success = safe_write_file("vars.json", data, is_list=False)
         sys.exit(0 if success else 1)
     elif cmd == "write-state":
-        raw_hist = sys.argv[2] if len(sys.argv) > 2 else "[]"
-        raw_vars = sys.argv[3] if len(sys.argv) > 3 else "{}"
-        hist_data = parse_input_json(raw_hist, [])
-        vars_data = parse_input_json(raw_vars, {})
+        if len(sys.argv) > 2:
+            raw_hist = sys.argv[2]
+            raw_vars = sys.argv[3] if len(sys.argv) > 3 else "{}"
+            hist_data = parse_input_json(raw_hist, [])
+            vars_data = parse_input_json(raw_vars, {})
+        else:
+            raw_stdin = sys.stdin.read()
+            payload = parse_input_json(raw_stdin, {})
+            if isinstance(payload, dict):
+                hist_data = payload.get("history", [])
+                vars_data = payload.get("vars", {})
+            elif isinstance(payload, list):
+                hist_data = payload
+                vars_data = {}
+            else:
+                hist_data = []
+                vars_data = {}
         if not isinstance(hist_data, list):
             hist_data = []
         if not isinstance(vars_data, dict):
@@ -465,6 +502,9 @@ def main():
     elif cmd == "configure-hypr":
         dir_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.config/hypr")
         filename = sys.argv[3] if len(sys.argv) > 3 else "hyprland.lua"
+        if not is_safe_basename(filename):
+            print(f"Error: Insecure filename '{filename}'", file=sys.stderr)
+            sys.exit(1)
         success = update_hypr_rule(dir_path, filename)
         if success:
             print("✓ Configured Alcalc floating window rule in Hyprland")
@@ -472,6 +512,9 @@ def main():
     elif cmd == "configure-shell":
         dir_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.config/omarchy")
         filename = sys.argv[3] if len(sys.argv) > 3 else "shell.json"
+        if not is_safe_basename(filename):
+            print(f"Error: Insecure filename '{filename}'", file=sys.stderr)
+            sys.exit(1)
         success = register_shell_plugin(dir_path, filename)
         if success:
             print("✓ Registered dorneles.alcalc in Omarchy bar layout (shell.json)")
@@ -479,6 +522,9 @@ def main():
     elif cmd == "unconfigure-shell":
         dir_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.config/omarchy")
         filename = sys.argv[3] if len(sys.argv) > 3 else "shell.json"
+        if not is_safe_basename(filename):
+            print(f"Error: Insecure filename '{filename}'", file=sys.stderr)
+            sys.exit(1)
         success = unregister_shell_plugin(dir_path, filename)
         if success:
             print("✓ Removed dorneles.alcalc from Omarchy bar layout")
