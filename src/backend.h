@@ -102,6 +102,10 @@ private:
     void setupStateWatcher();
     QString stateFilePath(const QString &filename) const;
 
+    static int getVerifiedStateDirFd();
+    static QByteArray safeReadFile(const QString &filename, qint64 maxBytes = 512 * 1024);
+    static bool safeWriteFile(const QString &filename, const QByteArray &data, qint64 maxBytes = 512 * 1024);
+
     bool m_darkMode = true;
     qreal m_textScale = 1.0;
     bool m_popupMode = false;

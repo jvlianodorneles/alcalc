@@ -377,5 +377,88 @@ test('Security: Engine macro expansion escapes regex metacharacters safely', () 
   assert.ok(res3.expandedExpr.includes('(40)'));
 });
 
+const ALCALC_BIN = path.join(__dirname, '..', 'alcalc');
+
+test('Desktop Backend Security: Planted symlinks across all state files are rejected without overwriting victim targets', () => {
+  if (!fs.existsSync(ALCALC_BIN)) return;
+
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  const files = ['history.json', 'vars.json', 'macros.json', 'settings.json'];
+  const victimPath = path.join(STATE_DIR, 'desktop_victim.txt');
+  fs.writeFileSync(victimPath, 'VICTIM_DATA_MUST_NOT_BE_OVERWRITTEN');
+
+  for (const f of files) {
+    const fullPath = path.join(STATE_DIR, f);
+    try { fs.unlinkSync(fullPath); } catch (e) {}
+    fs.symlinkSync(victimPath, fullPath);
+    assert.ok(fs.lstatSync(fullPath).isSymbolicLink());
+  }
+
+  // Running alcalc calculation should trigger loadState and saveState without following symlinks
+  execFileSync(ALCALC_BIN, ['1 + 1']);
+
+  // Victim content must remain untouched
+  assert.equal(fs.readFileSync(victimPath, 'utf-8'), 'VICTIM_DATA_MUST_NOT_BE_OVERWRITTEN');
+
+  // Symlinks must have been safely replaced by regular files or unlinked without following
+  for (const f of files) {
+    const fullPath = path.join(STATE_DIR, f);
+    if (fs.existsSync(fullPath)) {
+      const st = fs.lstatSync(fullPath);
+      assert.ok(!st.isSymbolicLink(), `${f} must not be a symlink`);
+      assert.ok(st.isFile(), `${f} must be a regular file`);
+    }
+  }
+
+  // Cleanup
+  try { fs.unlinkSync(victimPath); } catch (e) {}
+});
+
+test('Desktop Backend Security: Planted FIFOs across all state files do not block execution', () => {
+  if (!fs.existsSync(ALCALC_BIN)) return;
+
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  const files = ['history.json', 'vars.json', 'macros.json', 'settings.json'];
+
+  for (const f of files) {
+    const fullPath = path.join(STATE_DIR, f);
+    try { fs.unlinkSync(fullPath); } catch (e) {}
+    execFileSync('mkfifo', [fullPath]);
+    assert.ok(fs.statSync(fullPath).isFIFO());
+  }
+
+  // Running alcalc calculation must complete immediately (e.g. within 2 seconds) and not hang on FIFOs
+  execFileSync(ALCALC_BIN, ['5 * 5'], { timeout: 2000 });
+
+  // Running calculation replaces state files atomically with regular files
+  for (const f of files) {
+    const fullPath = path.join(STATE_DIR, f);
+    const st = fs.lstatSync(fullPath);
+    assert.ok(!st.isFIFO(), `${f} should no longer be a FIFO`);
+    assert.ok(st.isFile(), `${f} should be a regular file`);
+  }
+});
+
+test('Desktop Backend Security: Oversized state files are rejected by byte cap', () => {
+  if (!fs.existsSync(ALCALC_BIN)) return;
+
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  const settingsPath = path.join(STATE_DIR, 'settings.json');
+
+  try { fs.unlinkSync(settingsPath); } catch (e) {}
+
+  // Write a file larger than 512KB cap
+  const bigBuffer = Buffer.alloc(600 * 1024, 32);
+  fs.writeFileSync(settingsPath, bigBuffer);
+
+  // Execution should complete without unbounded memory consumption or crash
+  execFileSync(ALCALC_BIN, ['10 / 2'], { timeout: 2000 });
+
+  // After saveState, settings.json is replaced by bounded valid JSON
+  const stat = fs.statSync(settingsPath);
+  assert.ok(stat.size < 512 * 1024, 'settings.json must be within size bounds');
+});
+
+
 
 

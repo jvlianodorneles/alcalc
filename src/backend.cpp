@@ -13,8 +13,14 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QRandomGenerator>
 #include <QStandardPaths>
 #include <iostream>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 Backend::Backend(QObject *parent) : QObject(parent) {
     loadState();
@@ -95,8 +101,8 @@ void Backend::copyToClipboard(const QString &text) {
     if (QClipboard *clipboard = QGuiApplication::clipboard()) {
         clipboard->setText(text);
     }
-    // Also use wl-copy for native Wayland clipboard compatibility
-    QProcess::startDetached(QStringLiteral("wl-copy"), {text});
+    // Also use wl-copy for native Wayland clipboard compatibility with option terminator
+    QProcess::startDetached(QStringLiteral("wl-copy"), {QStringLiteral("--"), text});
 }
 
 QString Backend::stateDirectoryPath() const {
@@ -144,44 +150,206 @@ void Backend::setupStateWatcher() {
     connect(m_fileWatcher, &QFileSystemWatcher::directoryChanged, this, onModified);
 }
 
-void Backend::loadState() {
-    const QString dirPath = stateDirectoryPath();
-    QDir().mkpath(dirPath);
+int Backend::getVerifiedStateDirFd() {
+    const QString home = QDir::homePath();
+    const QString stateDir = home + QStringLiteral("/.local/state/omarchy/alcalc");
+    QDir().mkpath(stateDir);
 
-    // 1. History
-    QFile histFile(stateFilePath(QStringLiteral("history.json")));
-    if (histFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        const QJsonDocument doc = QJsonDocument::fromJson(histFile.readAll());
+    QByteArray absBytes = stateDir.toUtf8();
+    int curFd = ::open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (curFd < 0) {
+        return -1;
+    }
+
+    const QByteArrayList parts = absBytes.split('/');
+    const uid_t currentUid = ::getuid();
+
+    for (const QByteArray &part : parts) {
+        if (part.isEmpty())
+            continue;
+
+        int nextFd = ::openat(curFd, part.constData(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+        ::close(curFd);
+        if (nextFd < 0) {
+            return -1;
+        }
+        curFd = nextFd;
+
+        struct stat st;
+        if (::fstat(curFd, &st) != 0) {
+            ::close(curFd);
+            return -1;
+        }
+
+        if (!S_ISDIR(st.st_mode)) {
+            ::close(curFd);
+            return -1;
+        }
+
+        if (st.st_uid != 0 && st.st_uid != currentUid) {
+            ::close(curFd);
+            return -1;
+        }
+
+        if ((st.st_mode & 0002) && !(st.st_mode & S_ISVTX)) {
+            ::close(curFd);
+            return -1;
+        }
+    }
+
+    struct stat finalSt;
+    if (::fstat(curFd, &finalSt) == 0) {
+        if (finalSt.st_mode & 0077) {
+            ::fchmod(curFd, 0700);
+        }
+    }
+
+    return curFd;
+}
+
+QByteArray Backend::safeReadFile(const QString &filename, qint64 maxBytes) {
+    if (filename.isEmpty() || filename.contains(QLatin1Char('/')) || filename.contains(QLatin1Char('\\')) ||
+        filename == QStringLiteral(".") || filename == QStringLiteral("..")) {
+        return QByteArray();
+    }
+
+    int dirFd = getVerifiedStateDirFd();
+    if (dirFd < 0) {
+        return QByteArray();
+    }
+
+    const QByteArray fnameBytes = filename.toUtf8();
+    int fd = ::openat(dirFd, fnameBytes.constData(), O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+    if (fd < 0) {
+        ::close(dirFd);
+        return QByteArray();
+    }
+
+    struct stat st;
+    if (::fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_uid != ::getuid() || st.st_size > maxBytes) {
+        ::close(fd);
+        ::close(dirFd);
+        return QByteArray();
+    }
+
+    QByteArray buffer;
+    buffer.resize(static_cast<int>(st.st_size));
+    qint64 totalRead = 0;
+    while (totalRead < st.st_size) {
+        ssize_t n = ::read(fd, buffer.data() + totalRead, st.st_size - totalRead);
+        if (n <= 0) {
+            buffer.clear();
+            break;
+        }
+        totalRead += n;
+    }
+
+    ::close(fd);
+    ::close(dirFd);
+    return buffer;
+}
+
+bool Backend::safeWriteFile(const QString &filename, const QByteArray &data, qint64 maxBytes) {
+    if (filename.isEmpty() || filename.contains(QLatin1Char('/')) || filename.contains(QLatin1Char('\\')) ||
+        filename == QStringLiteral(".") || filename == QStringLiteral("..")) {
+        return false;
+    }
+
+    if (data.size() > maxBytes) {
+        return false;
+    }
+
+    int dirFd = getVerifiedStateDirFd();
+    if (dirFd < 0) {
+        return false;
+    }
+
+    quint64 randToken = QRandomGenerator::system()->generate64();
+    QString tempName = QStringLiteral(".%1.tmp.%2.%3")
+                           .arg(filename)
+                           .arg(::getpid())
+                           .arg(QString::number(randToken, 16));
+    const QByteArray tempNameBytes = tempName.toUtf8();
+    const QByteArray fnameBytes = filename.toUtf8();
+
+    int tempFd = ::openat(dirFd, tempNameBytes.constData(), O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
+    if (tempFd < 0) {
+        ::close(dirFd);
+        return false;
+    }
+
+    struct stat st;
+    if (::fstat(tempFd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_uid != ::getuid()) {
+        ::close(tempFd);
+        ::unlinkat(dirFd, tempNameBytes.constData(), 0);
+        ::close(dirFd);
+        return false;
+    }
+
+    qint64 totalWritten = 0;
+    const char *payload = data.constData();
+    const qint64 payloadLen = data.size();
+
+    while (totalWritten < payloadLen) {
+        ssize_t n = ::write(tempFd, payload + totalWritten, payloadLen - totalWritten);
+        if (n <= 0) {
+            ::close(tempFd);
+            ::unlinkat(dirFd, tempNameBytes.constData(), 0);
+            ::close(dirFd);
+            return false;
+        }
+        totalWritten += n;
+    }
+
+    ::fdatasync(tempFd);
+    ::close(tempFd);
+
+    if (::renameat(dirFd, tempNameBytes.constData(), dirFd, fnameBytes.constData()) != 0) {
+        ::unlinkat(dirFd, tempNameBytes.constData(), 0);
+        ::close(dirFd);
+        return false;
+    }
+
+    ::fsync(dirFd);
+    ::close(dirFd);
+    return true;
+}
+
+void Backend::loadState() {
+    // 1. History (bounded descriptor-safe read)
+    const QByteArray histBytes = safeReadFile(QStringLiteral("history.json"));
+    if (!histBytes.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(histBytes);
         if (doc.isArray()) {
             m_history = doc.array().toVariantList();
             emit historyChanged();
         }
     }
 
-    // 2. Variables
-    QFile varsFile(stateFilePath(QStringLiteral("vars.json")));
-    if (varsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        const QJsonDocument doc = QJsonDocument::fromJson(varsFile.readAll());
+    // 2. Variables (bounded descriptor-safe read)
+    const QByteArray varsBytes = safeReadFile(QStringLiteral("vars.json"));
+    if (!varsBytes.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(varsBytes);
         if (doc.isObject()) {
             m_vars = doc.object().toVariantMap();
             emit varsChanged();
         }
     }
 
-    // 3. Macros
-    QFile macrosFile(stateFilePath(QStringLiteral("macros.json")));
-    if (macrosFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        const QJsonDocument doc = QJsonDocument::fromJson(macrosFile.readAll());
+    // 3. Macros (bounded descriptor-safe read)
+    const QByteArray macrosBytes = safeReadFile(QStringLiteral("macros.json"));
+    if (!macrosBytes.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(macrosBytes);
         if (doc.isObject()) {
             m_macros = doc.object().toVariantMap();
             emit macrosChanged();
         }
     }
 
-    // 4. Settings
-    QFile setFile(stateFilePath(QStringLiteral("settings.json")));
-    if (setFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        const QJsonDocument doc = QJsonDocument::fromJson(setFile.readAll());
+    // 4. Settings (bounded descriptor-safe read)
+    const QByteArray setBytes = safeReadFile(QStringLiteral("settings.json"));
+    if (!setBytes.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(setBytes);
         if (doc.isObject()) {
             const QJsonObject obj = doc.object();
             if (obj.contains(QStringLiteral("places")))
@@ -195,50 +363,33 @@ void Backend::loadState() {
 
 void Backend::saveState() {
     m_isSavingState = true;
-    const QString dirPath = stateDirectoryPath();
-    QDir().mkpath(dirPath);
 
-    // 1. History
-    const QString histPath = stateFilePath(QStringLiteral("history.json"));
-    QFile histFile(histPath);
-    if (histFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        const QJsonDocument doc(QJsonArray::fromVariantList(m_history));
-        histFile.write(doc.toJson(QJsonDocument::Indented));
-        histFile.close();
-    }
+    // 1. History (bounded descriptor-safe atomic write)
+    const QJsonDocument histDoc(QJsonArray::fromVariantList(m_history));
+    safeWriteFile(QStringLiteral("history.json"), histDoc.toJson(QJsonDocument::Indented));
 
-    // 2. Variables
-    const QString varsPath = stateFilePath(QStringLiteral("vars.json"));
-    QFile varsFile(varsPath);
-    if (varsFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        const QJsonDocument doc(QJsonObject::fromVariantMap(m_vars));
-        varsFile.write(doc.toJson(QJsonDocument::Indented));
-        varsFile.close();
-    }
+    // 2. Variables (bounded descriptor-safe atomic write)
+    const QJsonDocument varsDoc(QJsonObject::fromVariantMap(m_vars));
+    safeWriteFile(QStringLiteral("vars.json"), varsDoc.toJson(QJsonDocument::Indented));
 
-    // 3. Macros
-    const QString macrosPath = stateFilePath(QStringLiteral("macros.json"));
-    QFile macrosFile(macrosPath);
-    if (macrosFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        const QJsonDocument doc(QJsonObject::fromVariantMap(m_macros));
-        macrosFile.write(doc.toJson(QJsonDocument::Indented));
-        macrosFile.close();
-    }
+    // 3. Macros (bounded descriptor-safe atomic write)
+    const QJsonDocument macrosDoc(QJsonObject::fromVariantMap(m_macros));
+    safeWriteFile(QStringLiteral("macros.json"), macrosDoc.toJson(QJsonDocument::Indented));
 
-    // 4. Settings
-    const QString setPath = stateFilePath(QStringLiteral("settings.json"));
-    QFile setFile(setPath);
-    if (setFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QJsonObject obj;
-        obj.insert(QStringLiteral("places"), m_places);
-        obj.insert(QStringLiteral("radians"), m_radians);
-        const QJsonDocument doc(obj);
-        setFile.write(doc.toJson(QJsonDocument::Indented));
-        setFile.close();
-    }
+    // 4. Settings (bounded descriptor-safe atomic write)
+    QJsonObject setObj;
+    setObj.insert(QStringLiteral("places"), m_places);
+    setObj.insert(QStringLiteral("radians"), m_radians);
+    const QJsonDocument setDoc(setObj);
+    safeWriteFile(QStringLiteral("settings.json"), setDoc.toJson(QJsonDocument::Indented));
 
     if (m_fileWatcher) {
-        const QStringList paths = {histPath, varsPath, macrosPath, setPath};
+        const QStringList paths = {
+            stateFilePath(QStringLiteral("history.json")),
+            stateFilePath(QStringLiteral("vars.json")),
+            stateFilePath(QStringLiteral("macros.json")),
+            stateFilePath(QStringLiteral("settings.json"))
+        };
         for (const QString &p : paths) {
             if (QFile::exists(p) && !m_fileWatcher->files().contains(p)) {
                 m_fileWatcher->addPath(p);
